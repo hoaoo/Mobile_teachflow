@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiClient, ApiError, type ChatAIMessage } from '@/api/client';
 import { Colors, Radius, Spacing } from '@/theme';
 
@@ -23,7 +24,9 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export default function AiChatScreen() {
+  const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
+
   const [messages, setMessages] = useState<ChatAIMessage[]>([
     {
       role: 'assistant',
@@ -35,6 +38,29 @@ export default function AiChatScreen() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // Dynamic keyboard listeners for clean bottom safe-area transitions
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, () => {
+      setIsKeyboardVisible(true);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 150);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleSend = async (customText?: string) => {
     const textToSend = (customText || inputText).trim();
@@ -96,15 +122,20 @@ export default function AiChatScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 44 : 0}>
       <StatusBar style="dark" />
 
+      {/* Conversation Feed */}
       <ScrollView
         ref={scrollViewRef}
+        style={styles.messagesScroll}
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="handled"
+        onContentSizeChange={() => {
+          scrollViewRef.current?.scrollToEnd({ animated: false });
+        }}>
         {/* Suggested Prompts if only 1 welcome message */}
         {messages.length === 1 && (
           <View style={styles.suggestionsContainer}>
@@ -186,7 +217,15 @@ export default function AiChatScreen() {
       </ScrollView>
 
       {/* Input Bar */}
-      <View style={styles.inputBar}>
+      <View
+        style={[
+          styles.inputBar,
+          {
+            paddingBottom: isKeyboardVisible
+              ? Spacing.sm
+              : Math.max(insets.bottom, Spacing.sm),
+          },
+        ]}>
         <TextInput
           style={styles.textInput}
           placeholder="Nhập câu hỏi sư phạm hoặc tình huống..."
@@ -195,6 +234,7 @@ export default function AiChatScreen() {
           onChangeText={setInputText}
           multiline
           maxLength={1000}
+          textAlignVertical="top"
           editable={!isLoading}
         />
         <Pressable
@@ -221,7 +261,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  messagesScroll: {
+    flex: 1,
+    minHeight: 0,
+  },
   scrollContent: {
+    flexGrow: 1,
     padding: Spacing.lg,
     paddingBottom: Spacing.xl,
     gap: Spacing.md,
@@ -340,15 +385,15 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     backgroundColor: Colors.surface,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingTop: Spacing.sm,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     gap: Spacing.sm,
   },
   textInput: {
     flex: 1,
-    minHeight: 42,
-    maxHeight: 100,
+    minHeight: 44,
+    maxHeight: 120,
     backgroundColor: Colors.background,
     borderWidth: 1,
     borderColor: Colors.borderLight,
@@ -360,8 +405,9 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   sendBtn: {
-    height: 42,
-    paddingHorizontal: Spacing.lg,
+    minHeight: 44,
+    minWidth: 54,
+    paddingHorizontal: Spacing.md,
     backgroundColor: Colors.primary,
     borderRadius: Radius.lg,
     alignItems: 'center',
