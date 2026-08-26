@@ -164,7 +164,7 @@ export function FloatingAiAssistant() {
               setShowTooltip(false);
               router.push('/ai');
             }}>
-            <Text style={styles.tooltipText}>✨ Trợ lý AI</Text>
+            <Text style={styles.tooltipText}>Trợ lý AI</Text>
           </Pressable>
         )}
 
@@ -173,7 +173,9 @@ export function FloatingAiAssistant() {
           style={styles.floatingButton}
           accessibilityRole="button"
           accessibilityLabel="Mở Trợ lý AI">
-          <Text style={styles.buttonIcon}>✨</Text>
+          <View style={styles.iconWrapper}>
+            <Text style={styles.aiText}>AI</Text>
+          </View>
           <View style={styles.badgeDot} />
         </View>
       </Animated.View>
@@ -206,8 +208,19 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#BAE6FD',
   },
-  buttonIcon: {
-    fontSize: 22,
+  iconWrapper: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   badgeDot: {
     position: 'absolute',
