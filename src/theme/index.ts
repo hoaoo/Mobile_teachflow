@@ -11,9 +11,20 @@ export const Colors = {
   primaryBg: '#F0F9FF',
   primaryBorder: '#BAE6FD',
 
-  brandTeal: '#0D9488',
+  brandTeal: '#103C36',
+  brandTealDark: '#0B2C27',
+  brandTealLight: '#164E46',
   brandMint: '#5EE0BD',
+  brandMintDark: '#10B981',
+  brandMintLight: '#A7F3D0',
   brandDark: '#103C36',
+
+  // Splash & Identity Specific Tokens
+  splashBackground: '#103C36',
+  splashAccentGlow: 'rgba(94, 224, 189, 0.12)',
+  brandTextOnDark: '#FFFFFF',
+  brandTextMutedOnDark: '#A7F3D0',
+  copyrightOnDark: 'rgba(255, 255, 255, 0.65)',
 
   // Surfaces & Backgrounds
   background: '#F8FAFC',

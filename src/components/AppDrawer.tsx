@@ -64,7 +64,7 @@ const SECTIONS: DrawerSection[] = [
     title: 'HỖ TRỢ',
     items: [
       { key: 'ai', label: 'Trợ lý AI', icon: '✨', route: '/ai' },
-      { key: 'notifications', label: 'Thông báo', icon: '🔔', action: 'notifications' },
+      { key: 'notifications', label: 'Thông báo', icon: '🔔', route: '/notifications' },
     ],
   },
 ];
@@ -74,7 +74,7 @@ export function AppDrawer() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { isDrawerOpen, closeDrawer, openNotif } = useDrawer();
+  const { isDrawerOpen, closeDrawer } = useDrawer();
   const { width: screenWidth } = useWindowDimensions();
 
   const drawerWidth = Math.min(screenWidth * 0.82, 330);
@@ -107,11 +107,6 @@ export function AppDrawer() {
 
   const handleNavigate = (item: DrawerItem) => {
     closeDrawer();
-    if (item.action === 'notifications') {
-      openNotif();
-      return;
-    }
-
     if (item.route) {
       if (item.route === '/' && pathname === '/') {
         return;

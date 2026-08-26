@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { apiClient, ApiError } from '@/api/client';
+import { TeachFlowBrand } from '@/components/branding/TeachFlowBrand';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
 
 export default function RegisterScreen() {
@@ -122,11 +123,7 @@ export default function RegisterScreen() {
             <View style={styles.responsiveWrapper}>
               {/* Brand Header */}
               <View style={styles.header}>
-                <View style={styles.brandIconBox}>
-                  <Text style={styles.brandIconText}>🎓</Text>
-                </View>
-                <Text style={styles.brandTitle}>TeachFlow</Text>
-                <Text style={styles.brandSubtitle}>Tạo tài khoản giáo viên mới</Text>
+                <TeachFlowBrand size="lg" subtitle="Tạo tài khoản giáo viên mới" />
               </View>
 
               {/* Form Card */}

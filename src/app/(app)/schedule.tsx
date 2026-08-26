@@ -18,6 +18,7 @@ import {
   type ScheduleStatus,
 } from '@/api/client';
 import { AppHeader } from '@/components/AppHeader';
+import { TeachFlowLoader } from '@/components/branding/TeachFlowLoader';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
 import {
   addDays,
@@ -464,10 +465,7 @@ export default function ScheduleScreen() {
 
       {/* CONTENT LIST */}
       {loading && !refreshing ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Đang tải lịch giảng dạy...</Text>
-        </View>
+        <TeachFlowLoader variant="fullscreen" label="Đang tải lịch giảng dạy..." />
       ) : errorMessage ? (
         <View style={styles.centerContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>

@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -14,6 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { apiClient, type ClassroomItem, type ClassroomListResponse } from '@/api/client';
 import { useAuth } from '@/auth';
 import { AppHeader } from '@/components/AppHeader';
+import { TeachFlowLoader } from '@/components/branding/TeachFlowLoader';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
 
 export default function ClassroomsScreen() {
@@ -259,10 +259,7 @@ export default function ClassroomsScreen() {
       <AppHeader title="Lớp học" subtitle="Quản lý phân công & danh sách lớp" />
 
       {loading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Đang tải danh sách lớp học...</Text>
-        </View>
+        <TeachFlowLoader variant="fullscreen" label="Đang tải danh sách lớp học..." />
       ) : (
         <FlatList
           data={filteredClassrooms}

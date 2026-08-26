@@ -19,6 +19,7 @@ import {
   type StudentListResponse,
 } from '@/api/client';
 import { AppHeader } from '@/components/AppHeader';
+import { TeachFlowLoader } from '@/components/branding/TeachFlowLoader';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
 
 export default function StudentsScreen() {
@@ -291,10 +292,7 @@ export default function StudentsScreen() {
       <AppHeader title="Học sinh" subtitle="Danh sách & hồ sơ học sinh" />
 
       {loading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Đang tải danh sách học sinh...</Text>
-        </View>
+        <TeachFlowLoader variant="fullscreen" label="Đang tải danh sách học sinh..." />
       ) : (
         <FlatList
           data={data?.items || []}

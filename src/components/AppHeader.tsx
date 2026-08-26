@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/auth';
 import { useDrawer } from '@/context/drawer-context';
+import { useNotification } from '@/context/notification-context';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
 
 export interface AppHeaderProps {
@@ -29,7 +30,8 @@ export function AppHeader({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { toggleDrawer, openAccount, openNotif } = useDrawer();
+  const { toggleDrawer, openAccount } = useDrawer();
+  const { unreadCount } = useNotification();
 
   const teacherName = user?.teacher?.fullName || user?.email?.split('@')[0] || 'G';
   const initial = teacherName.trim().charAt(0).toUpperCase();
@@ -44,6 +46,10 @@ export function AppHeader({
     } else {
       toggleDrawer();
     }
+  };
+
+  const handleNotifPress = () => {
+    router.push('/notifications');
   };
 
   return (
@@ -77,10 +83,17 @@ export function AppHeader({
           {/* Notification Button */}
           <Pressable
             style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
-            onPress={openNotif}
+            onPress={handleNotifPress}
             accessibilityRole="button"
             accessibilityLabel="Thông báo">
             <Text style={styles.notifIcon}>🔔</Text>
+            {unreadCount > 0 && (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>
+                  {unreadCount > 99 ? '99+' : String(unreadCount)}
+                </Text>
+              </View>
+            )}
           </Pressable>
 
           {/* Account Avatar Button */}
@@ -125,6 +138,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.surfaceMuted,
+    position: 'relative',
   },
   iconBtnPressed: {
     backgroundColor: Colors.borderLight,
@@ -157,6 +171,25 @@ const styles = StyleSheet.create({
   },
   notifIcon: {
     fontSize: 16,
+  },
+  notifBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: Colors.surface,
+  },
+  notifBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
   },
   avatarBtn: {
     borderRadius: Radius.full,

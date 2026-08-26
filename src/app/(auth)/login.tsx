@@ -17,6 +17,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/auth';
 import { ApiError } from '@/api/client';
+import { TeachFlowBrand } from '@/components/branding/TeachFlowBrand';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
 
 export default function LoginScreen() {
@@ -97,11 +98,7 @@ export default function LoginScreen() {
             <View style={styles.responsiveWrapper}>
               {/* Brand Header */}
               <View style={styles.header}>
-                <View style={styles.brandIconBox}>
-                  <Text style={styles.brandIconText}>🎓</Text>
-                </View>
-                <Text style={styles.brandTitle}>TeachFlow</Text>
-                <Text style={styles.brandSubtitle}>Không gian dành cho giáo viên</Text>
+                <TeachFlowBrand size="lg" subtitle="Không gian dành cho giáo viên" />
               </View>
 
               {/* Login Form Card */}

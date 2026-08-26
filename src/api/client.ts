@@ -1356,6 +1356,51 @@ class ApiClient {
 
     return response.json();
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NOTIFICATIONS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getNotifications(params?: NotificationQueryRequest): Promise<NotificationListResponse> {
+    const qs = params ? this.buildQueryString(params) : '';
+    const res = await this.request<any>(`/notifications${qs}`, {
+      method: 'GET',
+    });
+    const items = res?.data || res?.items || [];
+    return {
+      data: items,
+      items,
+      total: res?.total || items.length,
+      page: res?.page || 1,
+      pageSize: res?.pageSize || 20,
+      totalPages: res?.totalPages || 1,
+      unreadCount: typeof res?.unreadCount === 'number' ? res.unreadCount : 0,
+    };
+  }
+
+  async getUnreadNotificationCount(): Promise<{ count: number }> {
+    return this.request<{ count: number }>('/notifications/unread-count', {
+      method: 'GET',
+    });
+  }
+
+  async markNotificationAsRead(id: string): Promise<NotificationItem> {
+    return this.request<NotificationItem>(`/notifications/${id}/read`, {
+      method: 'PATCH',
+    });
+  }
+
+  async markAllNotificationsAsRead(): Promise<{ success: boolean; updatedCount: number }> {
+    return this.request<{ success: boolean; updatedCount: number }>('/notifications/read-all', {
+      method: 'PATCH',
+    });
+  }
+
+  async deleteNotification(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1446,6 +1491,62 @@ export interface AttendanceStatsData {
   lateCount: number;
   absentCount: number;
   overallRate: number;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NOTIFICATION TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type NotificationType =
+  | 'ASSIGNMENT'
+  | 'ENROLLMENT'
+  | 'TASK'
+  | 'ASSESSMENT'
+  | 'HOMEROOM'
+  | 'SYSTEM';
+
+export type MobileTargetType =
+  | 'ATTENDANCE'
+  | 'STUDENT'
+  | 'LESSON_PLAN'
+  | 'SCHEDULE'
+  | 'TASK'
+  | 'WORKSHEET'
+  | 'HOMEROOM'
+  | 'SYSTEM';
+
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  body?: string;
+  type: NotificationType;
+  targetType: MobileTargetType;
+  targetId?: string | null;
+  metadata?: Record<string, any>;
+  link?: string | null;
+  isRead: boolean;
+  readAt?: string | null;
+  createdAt: string;
+}
+
+export interface NotificationListResponse {
+  data: NotificationItem[];
+  items?: NotificationItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  unreadCount: number;
+}
+
+export interface NotificationQueryRequest {
+  [key: string]: string | number | boolean | undefined;
+  type?: NotificationType;
+  isRead?: boolean;
+  page?: number;
+  pageSize?: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

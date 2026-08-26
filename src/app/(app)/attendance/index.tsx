@@ -22,6 +22,7 @@ import {
   type StudentAttendanceItem,
 } from '@/api/client';
 import { AppHeader } from '@/components/AppHeader';
+import { TeachFlowLoader } from '@/components/branding/TeachFlowLoader';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
 import { addDays, formatDateVN, formatDayHeaderVN, getTodayVN, parseDateVN } from '@/utils/date';
 
@@ -598,10 +599,7 @@ export default function AttendanceScreen() {
 
           {/* Student Attendance List */}
           {loading && !refreshing ? (
-            <View style={styles.centerBox}>
-              <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={styles.loadingTxt}>Đang tải danh sách học sinh...</Text>
-            </View>
+            <TeachFlowLoader variant="inline" label="Đang tải danh sách điểm danh..." />
           ) : errorMessage ? (
             <View style={styles.centerBox}>
               <Text style={styles.errIcon}>⚠️</Text>

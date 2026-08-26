@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
+import { TeachFlowLoader } from '@/components/branding/TeachFlowLoader';
 import {
   apiClient,
   type AttentionStudentItem,
@@ -712,9 +713,7 @@ export default function HomeroomScreen() {
           />
         }>
         {loadingDashboard && !refreshing ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#0284C7" />
-          </View>
+          <TeachFlowLoader variant="fullscreen" label="Đang tải dữ liệu chủ nhiệm..." />
         ) : errorMessage ? (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{errorMessage}</Text>

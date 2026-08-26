@@ -14,6 +14,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { apiClient, type TeacherTaskItem } from '@/api/client';
 import { AppHeader } from '@/components/AppHeader';
+import { TeachFlowLoader } from '@/components/branding/TeachFlowLoader';
 
 function formatDisplayDate(date = new Date()): string {
   const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
@@ -387,10 +388,7 @@ export default function TasksScreen() {
 
       {/* Main Task List */}
       {loading && !refreshing ? (
-        <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#0284C7" />
-          <Text style={styles.loadingText}>Đang tải công việc...</Text>
-        </View>
+        <TeachFlowLoader variant="fullscreen" label="Đang tải công việc..." />
       ) : errorMessage ? (
         <View style={styles.centerBox}>
           <Text style={styles.errIcon}>⚠️</Text>

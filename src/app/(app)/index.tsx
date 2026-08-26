@@ -19,6 +19,7 @@ import {
 } from '@/api/client';
 import { useAuth } from '@/auth';
 import { AppHeader } from '@/components/AppHeader';
+import { TeachFlowLoader } from '@/components/branding/TeachFlowLoader';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
 import { computeScheduleStatus, formatFullDateVN, getTodayVN } from '@/utils/date';
 
@@ -106,6 +107,16 @@ export default function DashboardScreen() {
     (c: ClassroomItem) =>
       c.homeroomTeacherId === user?.teacher?.id || c.teacherId === user?.teacher?.id,
   );
+
+  if (loading && !refreshing) {
+    return (
+      <View style={styles.container}>
+        <StatusBar style="dark" />
+        <AppHeader title="TeachFlow" />
+        <TeachFlowLoader variant="fullscreen" label="Đang tải dữ liệu..." />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
