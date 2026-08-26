@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -15,21 +16,28 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/auth';
-import { ApiError } from '@/api/client';
+import { apiClient, ApiError } from '@/api/client';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const router = useRouter();
-  const { login } = useAuth();
 
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
+    if (!fullName.trim()) {
+      setErrorMessage('Vui lòng nhập họ và tên');
+      return false;
+    }
+
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
       setErrorMessage('Vui lòng nhập địa chỉ email');
@@ -47,8 +55,13 @@ export default function LoginScreen() {
       return false;
     }
 
-    if (password.length < 6) {
-      setErrorMessage('Mật khẩu phải có tối thiểu 6 ký tự');
+    if (password.length < 8) {
+      setErrorMessage('Mật khẩu phải có tối thiểu 8 ký tự');
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage('Mật khẩu xác nhận không khớp');
       return false;
     }
 
@@ -56,7 +69,7 @@ export default function LoginScreen() {
     return true;
   };
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     if (isSubmitting) return;
     if (!validateForm()) return;
 
@@ -65,14 +78,26 @@ export default function LoginScreen() {
     setErrorMessage(null);
 
     try {
-      await login({
-        email: email.trim(),
+      await apiClient.register({
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
-    } catch (err) {
+
+      Alert.alert(
+        'Đăng ký thành công',
+        'Tài khoản giáo viên đã được tạo thành công. Vui lòng đăng nhập để bắt đầu sử dụng TeachFlow.',
+        [
+          {
+            text: 'Đăng nhập ngay',
+            onPress: () => router.replace('/(auth)/login'),
+          },
+        ],
+      );
+    } catch (err: unknown) {
       if (err instanceof ApiError) {
-        if (err.statusCode === 401) {
-          setErrorMessage('Email hoặc mật khẩu không chính xác');
+        if (err.statusCode === 409) {
+          setErrorMessage('Địa chỉ email này đã được sử dụng trên hệ thống');
         } else {
           setErrorMessage(err.message);
         }
@@ -101,13 +126,15 @@ export default function LoginScreen() {
                   <Text style={styles.brandIconText}>🎓</Text>
                 </View>
                 <Text style={styles.brandTitle}>TeachFlow</Text>
-                <Text style={styles.brandSubtitle}>Không gian dành cho giáo viên</Text>
+                <Text style={styles.brandSubtitle}>Tạo tài khoản giáo viên mới</Text>
               </View>
 
-              {/* Login Form Card */}
+              {/* Form Card */}
               <View style={styles.card}>
-                <Text style={styles.formTitle}>Đăng nhập tài khoản</Text>
-                <Text style={styles.formDesc}>Chào mừng bạn quay trở lại giảng dạy</Text>
+                <Text style={styles.formTitle}>Đăng ký tài khoản</Text>
+                <Text style={styles.formDesc}>
+                  Tham gia cộng đồng giáo viên thông minh TeachFlow
+                </Text>
 
                 {errorMessage ? (
                   <View style={styles.errorContainer}>
@@ -115,9 +142,26 @@ export default function LoginScreen() {
                   </View>
                 ) : null}
 
+                {/* Full Name Input */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Họ và tên *</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Ví dụ: Nguyễn Văn A"
+                    placeholderTextColor={Colors.textMuted}
+                    value={fullName}
+                    onChangeText={(val) => {
+                      setFullName(val);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
+                    autoCapitalize="words"
+                    editable={!isSubmitting}
+                  />
+                </View>
+
                 {/* Email Input */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Email</Text>
+                  <Text style={styles.inputLabel}>Email trường / cá nhân *</Text>
                   <TextInput
                     style={styles.textInput}
                     placeholder="giaovien@truonghoc.edu.vn"
@@ -136,11 +180,11 @@ export default function LoginScreen() {
 
                 {/* Password Input */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Mật khẩu</Text>
+                  <Text style={styles.inputLabel}>Mật khẩu *</Text>
                   <View style={styles.passwordContainer}>
                     <TextInput
                       style={styles.passwordInput}
-                      placeholder="••••••••"
+                      placeholder="Tối thiểu 8 ký tự"
                       placeholderTextColor={Colors.textMuted}
                       value={password}
                       onChangeText={(val) => {
@@ -163,6 +207,35 @@ export default function LoginScreen() {
                   </View>
                 </View>
 
+                {/* Confirm Password Input */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Xác nhận mật khẩu *</Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      placeholder="Nhập lại mật khẩu"
+                      placeholderTextColor={Colors.textMuted}
+                      value={confirmPassword}
+                      onChangeText={(val) => {
+                        setConfirmPassword(val);
+                        if (errorMessage) setErrorMessage(null);
+                      }}
+                      secureTextEntry={!showConfirmPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      editable={!isSubmitting}
+                    />
+                    <Pressable
+                      style={styles.eyeButton}
+                      onPress={() => setShowConfirmPassword((prev) => !prev)}
+                      hitSlop={10}>
+                      <Text style={styles.eyeButtonText}>
+                        {showConfirmPassword ? 'Ẩn' : 'Hiện'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+
                 {/* Submit Button */}
                 <Pressable
                   style={({ pressed }) => [
@@ -170,28 +243,28 @@ export default function LoginScreen() {
                     isSubmitting && styles.submitButtonDisabled,
                     pressed && !isSubmitting && styles.submitButtonPressed,
                   ]}
-                  onPress={handleLogin}
+                  onPress={handleRegister}
                   disabled={isSubmitting}>
                   {isSubmitting ? (
                     <ActivityIndicator color={Colors.textWhite} size="small" />
                   ) : (
-                    <Text style={styles.submitButtonText}>Đăng nhập</Text>
+                    <Text style={styles.submitButtonText}>Tạo tài khoản</Text>
                   )}
                 </Pressable>
 
-                {/* Register Link */}
-                <View style={styles.registerRow}>
-                  <Text style={styles.registerPrompt}>Chưa có tài khoản? </Text>
-                  <Pressable onPress={() => router.push('/(auth)/register')}>
-                    <Text style={styles.registerLink}>Đăng ký ngay</Text>
+                {/* Login Link */}
+                <View style={styles.loginRow}>
+                  <Text style={styles.loginPrompt}>Đã có tài khoản? </Text>
+                  <Pressable onPress={() => router.replace('/(auth)/login')}>
+                    <Text style={styles.loginLink}>Đăng nhập</Text>
                   </Pressable>
                 </View>
               </View>
 
-              {/* Footer Notice */}
+              {/* Footer */}
               <View style={styles.footer}>
                 <Text style={styles.footerText}>
-                  TeachFlow • Trợ lý số toàn diện cho giáo viên tiểu học
+                  TeachFlow • Nền tảng quản lý dạy học thông minh
                 </Text>
               </View>
             </View>
@@ -223,7 +296,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: Spacing.xxl,
+    marginBottom: Spacing.xl,
   },
   brandIconBox: {
     width: 60,
@@ -290,7 +363,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   inputGroup: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   inputLabel: {
     ...Typography.labelBold,
@@ -338,7 +411,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -359,17 +432,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
-  registerRow: {
+  loginRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: Spacing.lg,
   },
-  registerPrompt: {
+  loginPrompt: {
     ...Typography.bodyMedium,
     color: Colors.textSecondary,
   },
-  registerLink: {
+  loginLink: {
     fontSize: 13,
     fontWeight: '700',
     color: Colors.primary,

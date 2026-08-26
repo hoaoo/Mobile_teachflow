@@ -387,6 +387,32 @@ export default function ClassroomDetailScreen() {
 
               <Pressable
                 style={({ pressed }) => [
+                  styles.attendanceBtn,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/worksheets/index',
+                  });
+                }}>
+                <Text style={styles.attendanceBtnText}>📑 Phiếu bài</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.attendanceBtn,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/assessments/index',
+                  });
+                }}>
+                <Text style={styles.attendanceBtnText}>📊 Đánh giá</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
                   styles.addStudentBtn,
                   pressed && styles.buttonPressed,
                 ]}

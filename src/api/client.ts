@@ -3,6 +3,16 @@ import { tokenStorage } from '@/services/storage.service';
 import type { components } from './openapi-types';
 
 export type LoginRequest = components['schemas']['LoginDto'];
+export type RegisterRequest = {
+  fullName: string;
+  email: string;
+  password: string;
+};
+export type UpdateProfileRequest = {
+  fullName?: string;
+  phone?: string;
+  avatarUrl?: string;
+};
 export type AuthResponse = components['schemas']['AuthResponseDto'];
 export type UserResponse = components['schemas']['UserResponseDto'];
 export type TeacherProfile = components['schemas']['TeacherProfileResponseDto'];
@@ -558,6 +568,13 @@ class ApiClient {
   // AUTH
   // ═══════════════════════════════════════════════════════════════════════════
 
+  async register(data: RegisterRequest): Promise<UserResponse> {
+    return this.request<UserResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     return this.request<AuthResponse>('/auth/login', {
       method: 'POST',
@@ -568,6 +585,13 @@ class ApiClient {
   async getMe(): Promise<UserResponse> {
     return this.request<UserResponse>('/auth/me', {
       method: 'GET',
+    });
+  }
+
+  async updateProfile(dto: UpdateProfileRequest): Promise<UserResponse> {
+    return this.request<UserResponse>('/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
     });
   }
 
@@ -941,12 +965,258 @@ class ApiClient {
     });
   }
 
+  async generateActivityAI(dto: GenerateActivityAIRequest): Promise<GeneratedActivityAIData> {
+    return this.request<GeneratedActivityAIData>('/ai/activity', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async generateWorksheetAI(dto: GenerateWorksheetAIRequest): Promise<GeneratedWorksheetAIData> {
+    return this.request<GeneratedWorksheetAIData>('/ai/worksheet', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async generateQuestionsAI(dto: GenerateQuestionsAIRequest): Promise<GeneratedQuestionsAIData> {
+    return this.request<GeneratedQuestionsAIData>('/ai/questions', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async generateStudentCommentAI(dto: GenerateStudentCommentAIRequest): Promise<GeneratedStudentCommentAIData> {
+    return this.request<GeneratedStudentCommentAIData>('/ai/student-comment', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async generateHomeroomSummaryAI(dto: GenerateHomeroomSummaryAIRequest): Promise<GeneratedHomeroomSummaryAIData> {
+    return this.request<GeneratedHomeroomSummaryAIData>('/ai/homeroom-summary', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async chatAI(dto: ChatAIRequest): Promise<ChatAIResponse> {
+    return this.request<ChatAIResponse>('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
   getLessonPlanExportDocxUrl(id: string): string {
     return `${this.baseUrl}/lesson-plans/${id}/export/docx`;
   }
 
   getLessonPlanExportPdfUrl(id: string): string {
     return `${this.baseUrl}/lesson-plans/${id}/export/pdf`;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // WORKSHEETS / PHIẾU BÀI TẬP
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getWorksheets(): Promise<WorksheetItem[]> {
+    const res = await this.request<WorksheetItem[]>('/worksheets', {
+      method: 'GET',
+    });
+    return Array.isArray(res) ? res : [];
+  }
+
+  async getWorksheetById(id: string): Promise<WorksheetItem> {
+    return this.request<WorksheetItem>(`/worksheets/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  async createWorksheet(dto: CreateWorksheetRequest): Promise<WorksheetItem> {
+    return this.request<WorksheetItem>('/worksheets', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async updateWorksheet(id: string, dto: UpdateWorksheetRequest): Promise<WorksheetItem> {
+    return this.request<WorksheetItem>(`/worksheets/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async deleteWorksheet(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/worksheets/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async duplicateWorksheet(id: string): Promise<WorksheetItem> {
+    return this.request<WorksheetItem>(`/worksheets/${id}/duplicate`, {
+      method: 'POST',
+    });
+  }
+
+  getWorksheetExportDocxUrl(id: string, includeAnswers = true): string {
+    return `${this.baseUrl}/worksheets/${id}/export/docx?includeAnswers=${includeAnswers}`;
+  }
+
+  getWorksheetExportPdfUrl(id: string, includeAnswers = true): string {
+    return `${this.baseUrl}/worksheets/${id}/export/pdf?includeAnswers=${includeAnswers}`;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ASSESSMENTS / ĐÁNH GIÁ
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getAssessments(params?: {
+    classroomId?: string;
+    subjectId?: string;
+    semester?: number;
+  }): Promise<AssessmentItem[]> {
+    const qs = params ? this.buildQueryString(params) : '';
+    const res = await this.request<AssessmentItem[]>(`/assessments${qs}`, {
+      method: 'GET',
+    });
+    return Array.isArray(res) ? res : [];
+  }
+
+  async getAssessmentById(id: string): Promise<AssessmentItem> {
+    return this.request<AssessmentItem>(`/assessments/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  async createAssessment(dto: CreateAssessmentRequest): Promise<AssessmentItem> {
+    return this.request<AssessmentItem>('/assessments', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async updateAssessment(id: string, dto: UpdateAssessmentRequest): Promise<AssessmentItem> {
+    return this.request<AssessmentItem>(`/assessments/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async deleteAssessment(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/assessments/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async batchSaveAssessmentScores(
+    id: string,
+    dto: BatchSaveAssessmentScoresRequest,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/assessments/${id}/scores`, {
+      method: 'PUT',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TEACHING RESOURCES / HỌC LIỆU & TÀI NGUYÊN
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getResources(params?: {
+    subjectId?: string;
+    gradeId?: string;
+    resourceType?: string;
+    search?: string;
+  }): Promise<TeachingResourceItem[]> {
+    const qs = params ? this.buildQueryString(params) : '';
+    const res = await this.request<TeachingResourceItem[]>(`/resources${qs}`, {
+      method: 'GET',
+    });
+    return Array.isArray(res) ? res : [];
+  }
+
+  async getResourceById(id: string): Promise<TeachingResourceItem> {
+    return this.request<TeachingResourceItem>(`/resources/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  async createResource(dto: CreateResourceRequest): Promise<TeachingResourceItem> {
+    return this.request<TeachingResourceItem>('/resources', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async updateResource(id: string, dto: UpdateResourceRequest): Promise<TeachingResourceItem> {
+    return this.request<TeachingResourceItem>(`/resources/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async deleteResource(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/resources/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  getResourceDownloadUrl(id: string): string {
+    return `${this.baseUrl}/resources/${id}/download`;
+  }
+
+  getResourceFileUrl(id: string): string {
+    return `${this.baseUrl}/resources/${id}/file`;
+  }
+
+  async getResourceSignedUrl(id: string): Promise<{ signedUrl: string; streamUrl: string; expiresAt: string }> {
+    return this.request<{ signedUrl: string; streamUrl: string; expiresAt: string }>(
+      `/resources/${id}/presign-url`,
+      { method: 'GET' },
+    );
+  }
+
+  async uploadResourceFile(dto: UploadResourceRequest): Promise<TeachingResourceItem> {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: dto.uri,
+      name: dto.name,
+      type: dto.type || 'application/octet-stream',
+    } as any);
+
+    if (dto.name) formData.append('name', dto.name);
+    if (dto.subjectId) formData.append('subjectId', dto.subjectId);
+    if (dto.gradeId) formData.append('gradeId', dto.gradeId);
+    if (dto.lessonId) formData.append('lessonId', dto.lessonId);
+    if (dto.description) formData.append('description', dto.description);
+    if (dto.tone) formData.append('tone', dto.tone);
+
+    const token = await tokenStorage.getAccessToken();
+    const url = `${this.baseUrl}/resources/upload`;
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let errorMsg = 'Không thể tải lên tập tin';
+      try {
+        const errorJson = await response.json();
+        errorMsg = Array.isArray(errorJson.message)
+          ? errorJson.message.join(', ')
+          : errorJson.message || errorMsg;
+      } catch {}
+      throw new ApiError(response.status, errorMsg);
+    }
+
+    return response.json();
   }
 }
 
@@ -1135,6 +1405,345 @@ export interface GeneratedLessonPlanAIData {
   qualities?: string;
   teachingEquipment?: string;
   activities: LessonPlanActivityItem[];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WORKSHEET TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type WorksheetQuestionType =
+  | 'MULTIPLE_CHOICE'
+  | 'TRUE_FALSE'
+  | 'FILL_BLANK'
+  | 'MATCHING'
+  | 'ESSAY';
+
+export interface WorksheetQuestionItem {
+  id?: string;
+  questionType: WorksheetQuestionType;
+  content: string;
+  options?: string[];
+  optionsJson?: string[] | null;
+  correctAnswer?: any;
+  correctAnswerJson?: any;
+  explanation?: string | null;
+  sortOrder?: number;
+}
+
+export interface WorksheetItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description?: string;
+  status: string;
+  meta?: string;
+  tone?: 'teal' | 'blue' | 'orange' | 'violet' | string;
+  subjectId?: string;
+  gradeId?: string;
+  classroomId?: string;
+  subject?: { id: string; name: string };
+  grade?: { id: string; name: string };
+  classroom?: { id: string; name: string };
+  questions?: WorksheetQuestionItem[];
+  questionsCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateWorksheetRequest {
+  title: string;
+  subtitle?: string;
+  description?: string;
+  status?: string;
+  meta?: string;
+  tone?: 'teal' | 'blue' | 'orange' | 'violet';
+  subjectId?: string;
+  gradeId?: string;
+  classroomId?: string;
+  questions?: WorksheetQuestionItem[];
+}
+
+export type UpdateWorksheetRequest = Partial<CreateWorksheetRequest>;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ASSESSMENT TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type AssessmentLevelType = 'EXCELLENT' | 'COMPLETED' | 'NEEDS_SUPPORT';
+
+export interface AssessmentCriterionItem {
+  id?: string;
+  code?: string;
+  name: string;
+}
+
+export interface StudentAssessmentScoreItem {
+  id?: string;
+  studentId: string;
+  criterionId?: string;
+  level?: AssessmentLevelType;
+  score?: number | null;
+  comment?: string;
+  student?: {
+    id: string;
+    fullName: string;
+    studentCode?: string;
+    gender?: string;
+  };
+}
+
+export interface AssessmentItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  status: string;
+  meta?: string;
+  tone?: 'teal' | 'blue' | 'orange' | 'violet' | string;
+  classroomId?: string;
+  subjectId?: string;
+  semester?: number;
+  assessmentType?: string;
+  weight?: number;
+  assessmentDate?: string;
+  version?: number;
+  classroom?: { id: string; name: string };
+  subject?: { id: string; name: string };
+  criteria?: AssessmentCriterionItem[];
+  studentAssessments?: StudentAssessmentScoreItem[];
+  students?: {
+    id: string;
+    fullName: string;
+    studentCode?: string;
+    gender?: string;
+  }[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateAssessmentRequest {
+  title: string;
+  subtitle?: string;
+  status?: string;
+  meta?: string;
+  tone?: 'teal' | 'blue' | 'orange' | 'violet';
+  classroomId?: string;
+  subjectId?: string;
+  semester?: number;
+  assessmentType?: string;
+  weight?: number;
+  assessmentDate?: string;
+  criteria?: AssessmentCriterionItem[];
+}
+
+export type UpdateAssessmentRequest = Partial<CreateAssessmentRequest> & { version?: number };
+
+export interface BatchSaveAssessmentScoresRequest {
+  scores: {
+    studentId: string;
+    criterionId?: string;
+    level?: AssessmentLevelType;
+    score?: number | null;
+    comment?: string;
+  }[];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TEACHING RESOURCE TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type TeachingResourceType =
+  | 'DOCUMENT'
+  | 'PRESENTATION'
+  | 'SPREADSHEET'
+  | 'IMAGE'
+  | 'VIDEO'
+  | 'LINK'
+  | 'OTHER'
+  | string;
+
+export interface TeachingResourceItem {
+  id: string;
+  name: string;
+  title: string;
+  originalFileName?: string;
+  storedFileName?: string;
+  resourceType: TeachingResourceType;
+  mimeType?: string;
+  size?: number;
+  formattedSize?: string;
+  extension?: string;
+  subjectId?: string;
+  subjectName?: string;
+  gradeId?: string;
+  gradeName?: string;
+  lessonId?: string;
+  lessonTitle?: string;
+  subtitle?: string;
+  description?: string;
+  status: string;
+  meta: string;
+  tone: string;
+  externalUrl?: string;
+  fileUrl?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateResourceRequest {
+  title: string;
+  subtitle?: string;
+  status?: string;
+  meta?: string;
+  tone?: 'teal' | 'blue' | 'orange' | 'violet';
+  resourceType?: string;
+  fileUrl?: string;
+  externalUrl?: string;
+  description?: string;
+  subjectId?: string;
+  gradeId?: string;
+}
+
+export type UpdateResourceRequest = Partial<CreateResourceRequest>;
+
+export interface UploadResourceRequest {
+  uri: string;
+  name: string;
+  type: string;
+  subjectId?: string;
+  gradeId?: string;
+  lessonId?: string;
+  description?: string;
+  tone?: string;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI ASSISTANT TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface ChatAIMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt?: string;
+}
+
+export interface ChatAIRequest {
+  message: string;
+  history?: string;
+  context?: string;
+}
+
+export interface ChatAIResponse {
+  messageId: string;
+  content: string;
+  reply: string;
+  generatedAt: string;
+}
+
+export interface GenerateActivityAIRequest {
+  grade: number;
+  subject: string;
+  lessonTitle: string;
+  activityType: string;
+  durationMinutes?: number;
+  requirement?: string;
+}
+
+export interface GeneratedActivityAIData {
+  activityType?: string;
+  title: string;
+  objective: string;
+  durationMinutes: number;
+  methods: string[];
+  techniques: string[];
+  competencies: string[];
+  qualities: string[];
+  teacherActivity: string;
+  studentActivity: string;
+}
+
+export interface GenerateWorksheetAIRequest {
+  grade: number;
+  subject: string;
+  lesson: string;
+  numberOfQuestions?: number;
+  difficulty?: string;
+  questionTypes?: string[];
+  knowledgeContent?: string;
+  includeAnswers?: boolean;
+}
+
+export interface GeneratedWorksheetAIData {
+  title: string;
+  questions: {
+    questionType: string;
+    content: string;
+    options?: string[];
+    correctAnswer?: string;
+    explanation?: string;
+  }[];
+  editorDraft?: {
+    title: string;
+    description?: string;
+    subtitle?: string;
+    questions: {
+      questionType: string;
+      content: string;
+      options?: string[];
+      correctAnswer?: string;
+      explanation?: string;
+      sortOrder?: number;
+    }[];
+  };
+}
+
+export interface GenerateQuestionsAIRequest {
+  grade: number;
+  subject: string;
+  topic: string;
+  numberOfQuestions?: number;
+  levels?: string[];
+}
+
+export interface GeneratedQuestionsAIData {
+  topic: string;
+  questions: {
+    questionType: string;
+    content: string;
+    options?: string[];
+    correctAnswer: string;
+    explanation?: string;
+    difficulty?: string;
+  }[];
+}
+
+export interface GenerateStudentCommentAIRequest {
+  studentId?: string;
+  subject?: string;
+  criteria?: Record<string, string>;
+  assessmentLevel?: string;
+  notes?: string;
+}
+
+export interface GeneratedStudentCommentAIData {
+  comment?: string;
+  comments?: string[];
+  overallAssessment?: string;
+  recommendations?: string;
+  strengths?: string[];
+  areasForImprovement?: string[];
+}
+
+export interface GenerateHomeroomSummaryAIRequest {
+  classroomId: string;
+  period: 'WEEK' | 'MONTH';
+  weekNumber?: number;
+}
+
+export interface GeneratedHomeroomSummaryAIData {
+  summary: string;
+  strengths: string[];
+  concerns: string[];
+  nextSteps: string[];
 }
 
 export const apiClient = new ApiClient();

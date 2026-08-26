@@ -206,6 +206,22 @@ export default function ClassroomsScreen() {
         </View>
       )}
 
+      {/* AI Assistant Quick Access Banner */}
+      <Pressable
+        style={({ pressed }) => [styles.aiBanner, pressed && styles.aiBannerPressed]}
+        onPress={() => router.push('/(app)/ai/index')}>
+        <View style={styles.aiBannerLeft}>
+          <View style={styles.aiIconBox}>
+            <Text style={styles.aiIcon}>✨</Text>
+          </View>
+          <View>
+            <Text style={styles.aiBannerTitle}>Trợ lý AI Giáo viên</Text>
+            <Text style={styles.aiBannerSubtitle}>Soạn giáo án, bài tập & hỏi đáp sư phạm</Text>
+          </View>
+        </View>
+        <Text style={styles.aiBannerArrow}>→</Text>
+      </Pressable>
+
       {/* Search Input */}
       <View style={styles.searchBox}>
         <Text style={styles.searchIcon}>🔍</Text>
@@ -576,5 +592,57 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 18,
+  },
+  aiBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    marginBottom: 16,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  aiBannerPressed: {
+    backgroundColor: '#F0F9FF',
+    transform: [{ scale: 0.99 }],
+  },
+  aiBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  aiIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiIcon: {
+    fontSize: 18,
+  },
+  aiBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  aiBannerSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  aiBannerArrow: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0284C7',
+    marginRight: 4,
   },
 });
