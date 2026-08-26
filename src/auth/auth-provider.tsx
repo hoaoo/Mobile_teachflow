@@ -47,6 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    apiClient.setUnauthorizedHandler(async () => {
+      await tokenStorage.clearTokens();
+      setUser(null);
+    });
+
+    return () => {
+      apiClient.setUnauthorizedHandler(undefined);
+    };
+  }, []);
+
   const login = useCallback(async (credentials: LoginRequest) => {
     const res = await apiClient.login(credentials);
     await tokenStorage.setAccessToken(res.accessToken);

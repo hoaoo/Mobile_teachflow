@@ -18,7 +18,15 @@ export class ApiError extends Error {
   }
 }
 
+type UnauthorizedHandler = () => void;
+
 class ApiClient {
+  private unauthorizedHandler?: UnauthorizedHandler;
+
+  setUnauthorizedHandler(handler: UnauthorizedHandler | undefined) {
+    this.unauthorizedHandler = handler;
+  }
+
   private get baseUrl(): string {
     return ENV.API_BASE_URL.replace(/\/+$/, '');
   }
@@ -63,6 +71,9 @@ class ApiClient {
           }
         } else if (response.status === 401) {
           errorMessage = 'Phiên đăng nhập đã hết hạn hoặc không hợp lệ';
+          if (!endpoint.includes('/auth/login')) {
+            this.unauthorizedHandler?.();
+          }
         } else if (response.status === 403) {
           errorMessage = 'Bạn không có quyền thực hiện hành động này';
         } else if (response.status === 404) {
