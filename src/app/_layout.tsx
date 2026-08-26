@@ -11,6 +11,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { ActivityIndicator, StyleSheet, useColorScheme, View } from 'react-native';
 import { AuthProvider, useAuth } from '@/auth';
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function RootNavigationLayout() {
@@ -26,7 +28,7 @@ function RootNavigationLayout() {
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
-      router.replace('/(app)/index');
+      router.replace('/(app)');
     }
   }, [isAuthenticated, isLoading, segments, router]);
 
@@ -50,11 +52,13 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <RootNavigationLayout />
-      </AuthProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AuthProvider>
+          <RootNavigationLayout />
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
 
