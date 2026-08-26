@@ -151,6 +151,307 @@ export interface GradeItem {
   isActive: boolean;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// HOMEROOM TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface HomeroomClassItem {
+  id: string;
+  code: string;
+  name: string;
+  gradeName: string;
+  gradeLevel: number;
+  schoolYearId: string;
+  schoolYearName: string;
+}
+
+export interface MyHomeroomClassesResponse {
+  hasHomeroomClass: boolean;
+  classes: HomeroomClassItem[];
+}
+
+export interface AttentionStudentReason {
+  type: 'ATTENDANCE' | 'ASSESSMENT' | 'BEHAVIOR';
+  description: string;
+}
+
+export interface AttentionStudentItem {
+  studentId: string;
+  studentName: string;
+  initials?: string | null;
+  avatarColor?: string | null;
+  reasons: AttentionStudentReason[];
+}
+
+export interface UpcomingBirthdayItem {
+  studentId: string;
+  fullName: string;
+  initials?: string | null;
+  avatarColor?: string | null;
+  dateOfBirth: string;
+  daysUntilBirthday: number;
+  isToday: boolean;
+  turningAge: number;
+}
+
+export interface HomeroomDashboardData {
+  hasHomeroomClass: boolean;
+  classroom: {
+    id: string;
+    name: string;
+    room?: string;
+    schedule?: string;
+    accent?: string;
+    studentCount?: number;
+    gradeName?: string | null;
+    schoolYearName?: string | null;
+    schoolYearId: string;
+  } | null;
+  students: {
+    id: string;
+    fullName: string;
+    initials?: string;
+    avatarColor?: string;
+  }[];
+  attendanceToday: {
+    isRecorded: boolean;
+    total: number;
+    present: number;
+    excusedAbsence: number;
+    unexcusedAbsence: number;
+    late: number;
+  };
+  studentsNeedAttention: AttentionStudentItem[];
+  upcomingBirthdays: UpcomingBirthdayItem[];
+  recentBehavior: {
+    id: string;
+    studentId: string;
+    studentName: string;
+    studentInitials?: string;
+    studentColor?: string;
+    recordDate: string;
+    category: string;
+    level: 'POSITIVE' | 'REMINDER' | 'NEEDS_ATTENTION';
+    content: string;
+  }[];
+  weeklyTasks: {
+    id: string;
+    title: string;
+    due?: string;
+    done: boolean;
+  }[];
+  currentWeekReview: {
+    id?: string;
+    weekNumber: number;
+    strengths?: string | null;
+    limitations?: string | null;
+    nextWeekPlan?: string | null;
+    version: number;
+  } | null;
+}
+
+export type BehaviorCategory =
+  | 'DISCIPLINE'
+  | 'LEARNING'
+  | 'HYGIENE'
+  | 'TEAMWORK'
+  | 'RESPONSIBILITY'
+  | 'OTHER';
+
+export type BehaviorLevel = 'POSITIVE' | 'REMINDER' | 'NEEDS_ATTENTION';
+
+export interface BehaviorRecordItem {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentInitials?: string;
+  studentColor?: string;
+  classroomId: string;
+  className: string;
+  recordDate: string;
+  category: BehaviorCategory;
+  behaviorType?: string | null;
+  level: BehaviorLevel;
+  content: string;
+  resolution?: string | null;
+  note?: string | null;
+  createdAt: string;
+}
+
+export interface BehaviorRecordsResponse {
+  items: BehaviorRecordItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  summary: {
+    totalRecords: number;
+    positiveCount: number;
+    reminderCount: number;
+    needsAttentionCount: number;
+  };
+}
+
+export interface CreateBehaviorRecordRequest {
+  classroomId: string;
+  studentId: string;
+  recordDate: string;
+  category: BehaviorCategory;
+  behaviorType?: string;
+  level: BehaviorLevel;
+  content: string;
+  resolution?: string;
+  note?: string;
+}
+
+export interface UpdateBehaviorRecordRequest {
+  recordDate?: string;
+  category?: BehaviorCategory;
+  behaviorType?: string;
+  level?: BehaviorLevel;
+  content?: string;
+  resolution?: string;
+  note?: string;
+}
+
+export interface WeeklyStudentComment {
+  studentId: string;
+  learning?: string;
+  behavior?: string;
+  attendance?: string;
+  comment?: string;
+}
+
+export interface WeeklyReviewItem {
+  id?: string;
+  classroomId: string;
+  schoolYearId: string;
+  weekNumber: number;
+  strengths?: string | null;
+  limitations?: string | null;
+  nextWeekPlan?: string | null;
+  notableStudents?: string | null;
+  supportStudents?: string | null;
+  studentComments?: WeeklyStudentComment[];
+  version: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SaveWeeklyReviewRequest {
+  classroomId: string;
+  schoolYearId?: string;
+  weekNumber: number;
+  strengths?: string;
+  limitations?: string;
+  nextWeekPlan?: string;
+  notableStudents?: string;
+  supportStudents?: string;
+  studentComments?: WeeklyStudentComment[];
+  version?: number;
+}
+
+export interface WeeklySummaryData {
+  weekNumber: number;
+  dateRange: string;
+  attendance: {
+    totalStudents: number;
+    totalSessions: number;
+    presentRate: number | null;
+    excusedAbsence: number;
+    unexcusedAbsence: number;
+    late: number;
+  };
+  behavior: {
+    positive: number;
+    reminder: number;
+    needsAttention: number;
+  };
+  assessment: {
+    isRecorded: boolean;
+    excellent: number;
+    completed: number;
+    needsSupport: number;
+  };
+}
+
+export interface MonthlyReviewItem {
+  id?: string;
+  classroomId: string;
+  schoolYearId: string;
+  year: number;
+  month: number;
+  highlights?: string | null;
+  limitations?: string | null;
+  nextMonthPlan?: string | null;
+  generalComment?: string | null;
+  difficulties?: string | null;
+  measures?: string | null;
+  classActivities?: string | null;
+  version: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SaveMonthlyReviewRequest {
+  classroomId: string;
+  schoolYearId?: string;
+  year: number;
+  month: number;
+  highlights?: string;
+  limitations?: string;
+  nextMonthPlan?: string;
+  generalComment?: string;
+  difficulties?: string;
+  measures?: string;
+  classActivities?: string;
+  version?: number;
+}
+
+export interface MonthlySummaryData {
+  year: number;
+  month: number;
+  classroom: {
+    id: string;
+    name: string;
+    gradeName: string | null;
+    schoolYearName: string | null;
+  };
+  attendance: {
+    totalStudents: number;
+    studentsAtStart: number;
+    studentsAtEnd: number;
+    studentsTransferredIn: number;
+    studentsTransferredOut: number;
+    totalSchoolDays: number;
+    attendanceRate: number | null;
+    excusedAbsence: number;
+    unexcusedAbsence: number;
+    late: number;
+  };
+  learning: {
+    isRecorded: boolean;
+    excellent: number;
+    completed: number;
+    needsSupport: number;
+  };
+  behavior: {
+    positive: number;
+    reminder: number;
+    needsAttention: number;
+  };
+  studentsNeedingSupport: {
+    id: string;
+    name: string;
+    reasons: string[];
+  }[];
+  studentsImproved: {
+    id: string;
+    name: string;
+    note: string;
+  }[];
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly statusCode: number,
@@ -232,6 +533,8 @@ class ApiClient {
           errorMessage = 'Bạn không có quyền thực hiện hành động này';
         } else if (response.status === 404) {
           errorMessage = 'Không tìm thấy dữ liệu yêu cầu';
+        } else if (response.status === 409) {
+          errorMessage = 'Dữ liệu đã bị thay đổi bởi phiên làm việc khác. Vui lòng tải lại.';
         } else if (response.status >= 500) {
           errorMessage = 'Hệ thống đang bảo trì, vui lòng thử lại sau';
         }
@@ -405,6 +708,117 @@ class ApiClient {
   async getGrades(): Promise<GradeItem[]> {
     return this.request<GradeItem[]>('/grades', {
       method: 'GET',
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HOMEROOM
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getMyHomerooms(): Promise<MyHomeroomClassesResponse> {
+    return this.request<MyHomeroomClassesResponse>('/homeroom/classrooms', {
+      method: 'GET',
+    });
+  }
+
+  async getHomeroomDashboard(classId?: string): Promise<HomeroomDashboardData> {
+    const qs = classId ? this.buildQueryString({ classId }) : '';
+    return this.request<HomeroomDashboardData>(`/homeroom/dashboard${qs}`, {
+      method: 'GET',
+    });
+  }
+
+  async getStudentsNeedAttention(classId: string): Promise<AttentionStudentItem[]> {
+    const qs = this.buildQueryString({ classId });
+    return this.request<AttentionStudentItem[]>(`/homeroom/students-need-attention${qs}`, {
+      method: 'GET',
+    });
+  }
+
+  async getUpcomingBirthdays(classId: string, days = 30): Promise<UpcomingBirthdayItem[]> {
+    const qs = this.buildQueryString({ classId, days });
+    return this.request<UpcomingBirthdayItem[]>(`/homeroom/upcoming-birthdays${qs}`, {
+      method: 'GET',
+    });
+  }
+
+  async getBehaviorRecords(query: {
+    classId?: string;
+    studentId?: string;
+    category?: BehaviorCategory;
+    behaviorType?: string;
+    level?: BehaviorLevel;
+    fromDate?: string;
+    toDate?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<BehaviorRecordsResponse> {
+    const qs = this.buildQueryString(query);
+    return this.request<BehaviorRecordsResponse>(`/homeroom/behavior${qs}`, {
+      method: 'GET',
+    });
+  }
+
+  async createBehaviorRecord(dto: CreateBehaviorRecordRequest): Promise<BehaviorRecordItem> {
+    return this.request<BehaviorRecordItem>('/homeroom/behavior', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async updateBehaviorRecord(id: string, dto: UpdateBehaviorRecordRequest): Promise<BehaviorRecordItem> {
+    return this.request<BehaviorRecordItem>(`/homeroom/behavior/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async deleteBehaviorRecord(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/homeroom/behavior/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getWeeklySummary(classId: string, weekNumber: number, schoolYearId?: string): Promise<WeeklySummaryData> {
+    const qs = this.buildQueryString({ classId, weekNumber, schoolYearId });
+    return this.request<WeeklySummaryData>(`/homeroom/weekly-summary${qs}`, {
+      method: 'GET',
+    });
+  }
+
+  async getWeeklyReview(classId: string, weekNumber: number, schoolYearId?: string): Promise<WeeklyReviewItem | null> {
+    const qs = this.buildQueryString({ classId, weekNumber, schoolYearId });
+    return this.request<WeeklyReviewItem | null>(`/homeroom/weekly-review${qs}`, {
+      method: 'GET',
+    });
+  }
+
+  async saveWeeklyReview(dto: SaveWeeklyReviewRequest): Promise<WeeklyReviewItem> {
+    return this.request<WeeklyReviewItem>('/homeroom/weekly-review', {
+      method: 'PUT',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async getMonthlySummary(classId: string, year: number, month: number): Promise<MonthlySummaryData> {
+    const qs = this.buildQueryString({ classId, year, month });
+    return this.request<MonthlySummaryData>(`/homeroom/monthly-summary${qs}`, {
+      method: 'GET',
+    });
+  }
+
+  async getMonthlyReview(classId: string, year: number, month: number): Promise<MonthlyReviewItem | null> {
+    const qs = this.buildQueryString({ classId, year, month });
+    return this.request<MonthlyReviewItem | null>(`/homeroom/monthly-review${qs}`, {
+      method: 'GET',
+    });
+  }
+
+  async saveMonthlyReview(dto: SaveMonthlyReviewRequest): Promise<MonthlyReviewItem> {
+    return this.request<MonthlyReviewItem>('/homeroom/monthly-review', {
+      method: 'PUT',
+      body: JSON.stringify(dto),
     });
   }
 }

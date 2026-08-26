@@ -35,6 +35,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="homeroom"
+        options={{
+          title: 'Chủ nhiệm',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon label="Chủ nhiệm" symbol="🌟" focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="students"
         options={{
           title: 'Học sinh',
