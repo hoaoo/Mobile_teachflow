@@ -14,11 +14,13 @@ import {
   apiClient,
   type ClassroomItem,
   type ClassroomListResponse,
+  type DashboardScheduleItem,
   type TeacherTaskItem,
 } from '@/api/client';
 import { useAuth } from '@/auth';
 import { AppHeader } from '@/components/AppHeader';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
+import { computeScheduleStatus, formatFullDateVN, getTodayVN } from '@/utils/date';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -26,21 +28,20 @@ export default function DashboardScreen() {
 
   const [classroomsData, setClassroomsData] = useState<ClassroomListResponse | null>(null);
   const [tasks, setTasks] = useState<TeacherTaskItem[]>([]);
+  const [todaySchedules, setTodaySchedules] = useState<DashboardScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const teacherName = user?.teacher?.fullName || user?.email?.split('@')[0] || 'Thầy/Cô';
-
-  const today = new Date();
-  const daysOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-  const dayName = daysOfWeek[today.getDay()];
-  const formattedDate = `${dayName}, ${today.getDate()} tháng ${today.getMonth() + 1}, ${today.getFullYear()}`;
+  const todayStr = getTodayVN();
+  const formattedDate = formatFullDateVN(new Date());
 
   const loadDashboardData = useCallback(async () => {
     try {
-      const [classRes, taskRes] = await Promise.allSettled([
+      const [classRes, taskRes, scheduleRes] = await Promise.allSettled([
         apiClient.getClassrooms(),
         apiClient.getTasks(),
+        apiClient.getDashboardSchedule({ date: todayStr }),
       ]);
 
       if (classRes.status === 'fulfilled') {
@@ -49,21 +50,25 @@ export default function DashboardScreen() {
       if (taskRes.status === 'fulfilled') {
         setTasks(taskRes.value || []);
       }
+      if (scheduleRes.status === 'fulfilled') {
+        setTodaySchedules(scheduleRes.value || []);
+      }
     } catch {
       // Ignored
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [todayStr]);
 
   useEffect(() => {
     let isMounted = true;
     const fetchInit = async () => {
       try {
-        const [classRes, taskRes] = await Promise.allSettled([
+        const [classRes, taskRes, scheduleRes] = await Promise.allSettled([
           apiClient.getClassrooms(),
           apiClient.getTasks(),
+          apiClient.getDashboardSchedule({ date: todayStr }),
         ]);
 
         if (!isMounted) return;
@@ -72,6 +77,9 @@ export default function DashboardScreen() {
         }
         if (taskRes.status === 'fulfilled') {
           setTasks(taskRes.value || []);
+        }
+        if (scheduleRes.status === 'fulfilled') {
+          setTodaySchedules(scheduleRes.value || []);
         }
       } catch {
         // Ignored
@@ -87,7 +95,7 @@ export default function DashboardScreen() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [todayStr]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -127,9 +135,18 @@ export default function DashboardScreen() {
         <View style={styles.quickGrid}>
           <Pressable
             style={({ pressed }) => [styles.quickBtn, pressed && styles.btnPressed]}
+            onPress={() => router.push('/schedule')}>
+            <View style={[styles.quickIconBox, { backgroundColor: '#FEE2E2' }]}>
+              <Text style={styles.quickIcon}>📅</Text>
+            </View>
+            <Text style={styles.quickLabel}>Lịch dạy</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.quickBtn, pressed && styles.btnPressed]}
             onPress={() => router.push('/attendance')}>
             <View style={[styles.quickIconBox, { backgroundColor: '#E0F2FE' }]}>
-              <Text style={styles.quickIcon}>📅</Text>
+              <Text style={styles.quickIcon}>📋</Text>
             </View>
             <Text style={styles.quickLabel}>Điểm danh</Text>
           </Pressable>
@@ -156,7 +173,7 @@ export default function DashboardScreen() {
             style={({ pressed }) => [styles.quickBtn, pressed && styles.btnPressed]}
             onPress={() => router.push('/tasks')}>
             <View style={[styles.quickIconBox, { backgroundColor: '#FEF3C7' }]}>
-              <Text style={styles.quickIcon}>📋</Text>
+              <Text style={styles.quickIcon}>✅</Text>
             </View>
             <Text style={styles.quickLabel}>Công việc</Text>
           </Pressable>
@@ -169,6 +186,79 @@ export default function DashboardScreen() {
           </View>
         ) : (
           <>
+            {/* Today's Schedule Widget */}
+            <View style={styles.sectionContainer}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeading}>
+                  LỊCH DẠY HÔM NAY ({todaySchedules.length})
+                </Text>
+                <Pressable onPress={() => router.push('/schedule')}>
+                  <Text style={styles.linkText}>Xem lịch đầy đủ →</Text>
+                </Pressable>
+              </View>
+
+              {todaySchedules.length > 0 ? (
+                <View style={styles.scheduleList}>
+                  {todaySchedules.map((item) => {
+                    const st = computeScheduleStatus(item);
+                    return (
+                      <Pressable
+                        key={item.id}
+                        style={({ pressed }) => [
+                          styles.scheduleItemCard,
+                          pressed && styles.cardPressed,
+                        ]}
+                        onPress={() => router.push('/schedule')}>
+                        <View style={styles.scheduleTimeCol}>
+                          <Text style={styles.scheduleTimeText}>{item.time}</Text>
+                          {item.room ? (
+                            <Text style={styles.scheduleRoomText}>P.{item.room}</Text>
+                          ) : null}
+                        </View>
+
+                        <View style={styles.scheduleDivider} />
+
+                        <View style={styles.scheduleInfoCol}>
+                          <Text style={styles.scheduleSubjectText} numberOfLines={1}>
+                            {item.subject}
+                          </Text>
+                          <Text style={styles.scheduleClassText}>
+                            Lớp {item.className}
+                            {item.gradeName ? ` • Khối ${item.gradeName}` : ''}
+                          </Text>
+                          {item.lessonPlanTitle ? (
+                            <Text style={styles.scheduleLessonPlanText} numberOfLines={1}>
+                              📖 {item.lessonPlanTitle}
+                            </Text>
+                          ) : null}
+                        </View>
+
+                        <View
+                          style={[
+                            styles.scheduleStatusBadge,
+                            { backgroundColor: st.bgColor, borderColor: st.borderColor },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.scheduleStatusText,
+                              { color: st.textColor },
+                            ]}>
+                            {st.label}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyText}>
+                    🎉 Hôm nay Thầy/Cô không có tiết dạy nào.
+                  </Text>
+                </View>
+              )}
+            </View>
+
             {/* Homeroom Summary Card */}
             {homeroomClass && (
               <View style={styles.sectionContainer}>
@@ -207,10 +297,12 @@ export default function DashboardScreen() {
               </View>
             )}
 
-            {/* Lịch dạy & Danh sách lớp hôm nay */}
+            {/* Lớp học phụ trách */}
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeading}>LỚP HỌC PHỤ TRÁCH ({classroomsData?.items?.length || 0})</Text>
+                <Text style={styles.sectionHeading}>
+                  LỚP HỌC PHỤ TRÁCH ({classroomsData?.items?.length || 0})
+                </Text>
                 <Pressable onPress={() => router.push('/classrooms')}>
                   <Text style={styles.linkText}>Xem tất cả →</Text>
                 </Pressable>
@@ -219,7 +311,9 @@ export default function DashboardScreen() {
               {classroomsData?.items && classroomsData.items.length > 0 ? (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizScroll}>
                   {classroomsData.items.slice(0, 5).map((cls: ClassroomItem) => {
-                    const isHr = cls.homeroomTeacherId === user?.teacher?.id || cls.teacherId === user?.teacher?.id;
+                    const isHr =
+                      cls.homeroomTeacherId === user?.teacher?.id ||
+                      cls.teacherId === user?.teacher?.id;
                     return (
                       <Pressable
                         key={cls.id}
@@ -229,7 +323,9 @@ export default function DashboardScreen() {
                           <Text style={styles.clsMiniName}>Lớp {cls.name}</Text>
                           {isHr && <Text style={styles.starIcon}>🌟</Text>}
                         </View>
-                        <Text style={styles.clsMiniDesc}>Khối {cls.grade} • {cls.studentCount} học sinh</Text>
+                        <Text style={styles.clsMiniDesc}>
+                          Khối {cls.grade} • {cls.studentCount} học sinh
+                        </Text>
                         <View style={styles.clsMiniFooter}>
                           <Text style={styles.clsAction}>Vào lớp →</Text>
                         </View>
@@ -313,8 +409,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Spacing.md,
-    paddingBottom: Spacing.xxxl,
-    gap: Spacing.lg,
+    paddingBottom: 96,
+    gap: Spacing.md,
   },
   greetingCard: {
     backgroundColor: Colors.surface,
@@ -325,25 +421,25 @@ const styles = StyleSheet.create({
     shadowColor: Colors.textPrimary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowRadius: 4,
     elevation: 2,
     gap: 4,
   },
   greetingTitle: {
     ...Typography.titleLarge,
-    fontSize: 20,
     color: Colors.textPrimary,
+    fontWeight: '800',
   },
   greetingDate: {
-    ...Typography.labelBold,
+    ...Typography.bodyMedium,
     color: Colors.primary,
-    fontSize: 13,
+    fontWeight: '600',
   },
   greetingDesc: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
     marginTop: 4,
-    lineHeight: 16,
+    lineHeight: 18,
   },
   sectionHeading: {
     fontSize: 12,
@@ -353,83 +449,136 @@ const styles = StyleSheet.create({
   },
   quickGrid: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    justifyContent: 'space-between',
+    gap: Spacing.xs,
   },
   quickBtn: {
     flex: 1,
     backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: 2,
     alignItems: 'center',
-    justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
-    gap: 6,
     shadowColor: Colors.textPrimary,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
-    shadowRadius: 4,
+    shadowRadius: 2,
     elevation: 1,
+    gap: 4,
   },
   btnPressed: {
-    backgroundColor: Colors.surfaceMuted,
-    transform: [{ scale: 0.97 }],
+    opacity: 0.8,
   },
   quickIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   quickIcon: {
-    fontSize: 20,
+    fontSize: 18,
   },
   quickLabel: {
-    ...Typography.bodySmall,
+    fontSize: 11,
     fontWeight: '700',
     color: Colors.textPrimary,
-    fontSize: 12,
+    textAlign: 'center',
   },
   sectionContainer: {
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 4,
   },
   linkText: {
     fontSize: 12,
     fontWeight: '700',
     color: Colors.primary,
   },
-  homeroomCard: {
+  scheduleList: {
+    gap: Spacing.xs,
+  },
+  scheduleItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.surface,
-    borderRadius: Radius.xl,
-    padding: Spacing.lg,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.primaryBorder,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-    gap: Spacing.md,
+    borderColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  scheduleTimeCol: {
+    width: 80,
+  },
+  scheduleTimeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+  },
+  scheduleRoomText: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  scheduleDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: Colors.borderLight,
+  },
+  scheduleInfoCol: {
+    flex: 1,
+  },
+  scheduleSubjectText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  scheduleClassText: {
+    fontSize: 11,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  scheduleLessonPlanText: {
+    fontSize: 10,
+    color: '#15803D',
+    marginTop: 2,
+  },
+  scheduleStatusBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: Radius.xs,
+    borderWidth: 1,
+  },
+  scheduleStatusText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  homeroomCard: {
+    backgroundColor: '#F0F9FF',
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    gap: Spacing.sm,
   },
   cardPressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.99 }],
+    opacity: 0.9,
   },
   hrTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   badgeHomeroom: {
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: Radius.xs,
     alignSelf: 'flex-start',
@@ -437,30 +586,25 @@ const styles = StyleSheet.create({
   },
   badgeHomeroomText: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#92400E',
   },
   hrClassName: {
-    ...Typography.titleLarge,
     fontSize: 18,
+    fontWeight: '800',
     color: Colors.textPrimary,
   },
   hrStats: {
-    alignItems: 'center',
-    backgroundColor: Colors.primaryBg,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.md,
+    alignItems: 'flex-end',
   },
   hrStudentsCount: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     color: Colors.primary,
   },
   hrStudentsLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: Colors.textSecondary,
-    fontWeight: '600',
   },
   hrFooter: {
     flexDirection: 'row',
@@ -468,7 +612,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: Spacing.xs,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
+    borderTopColor: '#E0F2FE',
   },
   hrFooterInfo: {
     fontSize: 12,
@@ -477,22 +621,20 @@ const styles = StyleSheet.create({
   hrAttendanceText: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.success,
+    color: Colors.primary,
   },
   horizScroll: {
-    marginHorizontal: -Spacing.md,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: 2,
   },
   classMiniCard: {
-    width: 160,
     backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
+    width: 160,
     marginRight: Spacing.sm,
-    justifyContent: 'space-between',
-    minHeight: 96,
+    gap: Spacing.xs,
   },
   clsMiniHeader: {
     flexDirection: 'row',
@@ -500,20 +642,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   clsMiniName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: Colors.textPrimary,
   },
   starIcon: {
-    fontSize: 14,
+    fontSize: 12,
   },
   clsMiniDesc: {
     fontSize: 11,
     color: Colors.textSecondary,
-    marginTop: 2,
   },
   clsMiniFooter: {
-    marginTop: Spacing.sm,
+    marginTop: 4,
   },
   clsAction: {
     fontSize: 11,
@@ -525,28 +666,26 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xl,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: Spacing.sm,
-    gap: Spacing.xs,
+    padding: Spacing.xs,
   },
   taskItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surfaceMuted,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
     gap: Spacing.sm,
   },
   taskBullet: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: Colors.primary,
   },
   taskInfo: {
     flex: 1,
   },
   taskTitle: {
-    ...Typography.bodyMedium,
     fontSize: 13,
     fontWeight: '600',
     color: Colors.textPrimary,
@@ -562,8 +701,8 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xs,
   },
   taskStatusText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
   },
   loadingBox: {
     padding: Spacing.xxl,
@@ -583,7 +722,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   emptyText: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textSecondary,
   },
 });

@@ -17,6 +17,7 @@ export default function AppLayout() {
             animation: 'slide_from_right',
           }}>
           <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="schedule" options={{ headerShown: false }} />
           <Stack.Screen name="classrooms" options={{ headerShown: false }} />
           <Stack.Screen name="students" options={{ headerShown: false }} />
           <Stack.Screen name="homeroom" options={{ headerShown: false }} />

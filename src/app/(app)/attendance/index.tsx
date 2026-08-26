@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { AppHeader } from '@/components/AppHeader';
 import {
   apiClient,
   type AttendanceHistoryItem,
@@ -22,24 +21,50 @@ import {
   type ClassroomItem,
   type StudentAttendanceItem,
 } from '@/api/client';
-
-function getLocalDateString(date = new Date()): string {
-  const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+import { AppHeader } from '@/components/AppHeader';
+import { Colors, Radius, Spacing, Typography } from '@/theme';
+import { addDays, formatDateVN, formatDayHeaderVN, getTodayVN, parseDateVN } from '@/utils/date';
 
 const ATTENDANCE_STATUS_MAP: {
   key: AttendanceStatus;
   label: string;
   shortLabel: string;
   color: string;
+  bgColor: string;
+  borderColor: string;
 }[] = [
-  { key: 'PRESENT', label: 'Có mặt', shortLabel: 'Có mặt', color: '#059669' },
-  { key: 'EXCUSED_ABSENCE', label: 'Vắng có phép', shortLabel: 'Có phép', color: '#D97706' },
-  { key: 'UNEXCUSED_ABSENCE', label: 'Vắng không phép', shortLabel: 'K.Phép', color: '#DC2626' },
-  { key: 'LATE', label: 'Đi muộn', shortLabel: 'Muộn', color: '#7C3AED' },
+  {
+    key: 'PRESENT',
+    label: 'Có mặt',
+    shortLabel: 'Có mặt',
+    color: '#059669',
+    bgColor: '#DCFCE7',
+    borderColor: '#BBF7D0',
+  },
+  {
+    key: 'EXCUSED_ABSENCE',
+    label: 'Vắng có phép',
+    shortLabel: 'Có phép',
+    color: '#D97706',
+    bgColor: '#FEF3C7',
+    borderColor: '#FDE68A',
+  },
+  {
+    key: 'UNEXCUSED_ABSENCE',
+    label: 'Vắng không phép',
+    shortLabel: 'K.Phép',
+    color: '#DC2626',
+    bgColor: '#FEE2E2',
+    borderColor: '#FECACA',
+  },
+  {
+    key: 'LATE',
+    label: 'Đi muộn',
+    shortLabel: 'Muộn',
+    color: '#7C3AED',
+    bgColor: '#EDE9FE',
+    borderColor: '#DDD6FE',
+  },
 ];
 
 export default function AttendanceScreen() {
@@ -47,7 +72,7 @@ export default function AttendanceScreen() {
 
   const [classrooms, setClassrooms] = useState<ClassroomItem[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>(params.classId || '');
-  const [selectedDate, setSelectedDate] = useState<string>(params.date || getLocalDateString());
+  const [selectedDate, setSelectedDate] = useState<string>(params.date || getTodayVN());
   const [sessionPeriod, setSessionPeriod] = useState<'MORNING' | 'AFTERNOON'>('MORNING');
 
   // Mode: 'RECORD' (Điểm danh) | 'HISTORY' (Lịch sử)
@@ -98,13 +123,15 @@ export default function AttendanceScreen() {
         setErrorMessage(null);
         if (!isRefresh) setLoading(true);
         const res = await apiClient.getAttendance(classId, date);
-        setStudents(res.students || []);
-        setIsRecorded(res.isRecorded);
+        setStudents(res.students || res.items || []);
+        setIsRecorded(res.isRecorded || false);
         setIsDirty(false);
       } catch (err: unknown) {
-        setErrorMessage(
-          err instanceof Error ? err.message : 'Không thể tải danh sách điểm danh',
-        );
+        if (err instanceof Error) {
+          setErrorMessage(err.message);
+        } else {
+          setErrorMessage('Không thể tải dữ liệu điểm danh');
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -113,102 +140,96 @@ export default function AttendanceScreen() {
     [],
   );
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchAttendanceData = async () => {
-      if (!selectedClassId || !selectedDate) return;
+  // 3. Fetch History & Stats
+  const loadHistoryAndStats = useCallback(
+    async (classId: string, isRefresh = false) => {
+      if (!classId) return;
       try {
-        setErrorMessage(null);
-        setLoading(true);
-        const res = await apiClient.getAttendance(selectedClassId, selectedDate);
-        if (isMounted) {
-          setStudents(res.students || []);
-          setIsRecorded(res.isRecorded);
-          setIsDirty(false);
-        }
-      } catch (err: unknown) {
-        if (isMounted) {
-          setErrorMessage(
-            err instanceof Error ? err.message : 'Không thể tải danh sách điểm danh',
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-          setRefreshing(false);
-        }
-      }
-    };
-
-    fetchAttendanceData();
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedClassId, selectedDate]);
-
-  // 3. Fetch History & Stats when on HISTORY tab
-  useEffect(() => {
-    let isMounted = true;
-    const fetchHistoryData = async () => {
-      if (activeTab !== 'HISTORY') return;
-      try {
-        setLoadingHistory(true);
-        const [hist, st] = await Promise.all([
-          apiClient.getAttendanceHistory().catch(() => []),
-          apiClient.getAttendanceStats({ classId: selectedClassId || undefined }).catch(() => null),
+        if (!isRefresh) setLoadingHistory(true);
+        const [histRes, statRes] = await Promise.allSettled([
+          apiClient.getAttendanceHistory(),
+          apiClient.getAttendanceStats({ classId }),
         ]);
-        if (isMounted) {
-          setHistoryItems(hist);
-          setStats(st);
+
+        if (histRes.status === 'fulfilled') {
+          setHistoryItems(histRes.value || []);
+        }
+        if (statRes.status === 'fulfilled') {
+          setStats(statRes.value);
         }
       } catch {
-        // Silently handle
+        // Silently ignore
       } finally {
-        if (isMounted) {
-          setLoadingHistory(false);
-          setRefreshing(false);
+        setLoadingHistory(false);
+      }
+    },
+    [],
+  );
+
+  // Effect when selection changes
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      if (!selectedClassId) return;
+      if (activeTab === 'RECORD') {
+        try {
+          const res = await apiClient.getAttendance(selectedClassId, selectedDate);
+          if (isMounted) {
+            setStudents(res.students || res.items || []);
+            setIsRecorded(res.isRecorded || false);
+            setIsDirty(false);
+            setErrorMessage(null);
+          }
+        } catch (err: unknown) {
+          if (isMounted) {
+            setErrorMessage(err instanceof Error ? err.message : 'Không thể tải dữ liệu điểm danh');
+          }
+        } finally {
+          if (isMounted) {
+            setLoading(false);
+            setRefreshing(false);
+          }
+        }
+      } else {
+        try {
+          const [histRes, statRes] = await Promise.allSettled([
+            apiClient.getAttendanceHistory(),
+            apiClient.getAttendanceStats({ classId: selectedClassId }),
+          ]);
+          if (isMounted) {
+            if (histRes.status === 'fulfilled') {
+              setHistoryItems(histRes.value || []);
+            }
+            if (statRes.status === 'fulfilled') {
+              setStats(statRes.value);
+            }
+          }
+        } catch {
+          // Silently ignore
+        } finally {
+          if (isMounted) {
+            setLoadingHistory(false);
+          }
         }
       }
     };
 
-    fetchHistoryData();
+    load();
     return () => {
       isMounted = false;
     };
-  }, [activeTab, selectedClassId]);
-
-  const loadHistoryAndStats = useCallback(async () => {
-    try {
-      setLoadingHistory(true);
-      const [hist, st] = await Promise.all([
-        apiClient.getAttendanceHistory().catch(() => []),
-        apiClient.getAttendanceStats({ classId: selectedClassId || undefined }).catch(() => null),
-      ]);
-      setHistoryItems(hist);
-      setStats(st);
-    } catch {
-      // Silently handle
-    } finally {
-      setLoadingHistory(false);
-      setRefreshing(false);
-    }
-  }, [selectedClassId]);
+  }, [selectedClassId, selectedDate, activeTab]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    if (activeTab === 'RECORD' && selectedClassId && selectedDate) {
+    if (activeTab === 'RECORD') {
       loadAttendance(selectedClassId, selectedDate, true);
-    } else if (activeTab === 'HISTORY') {
-      loadHistoryAndStats();
     } else {
-      setRefreshing(false);
+      loadHistoryAndStats(selectedClassId, true);
     }
   }, [activeTab, selectedClassId, selectedDate, loadAttendance, loadHistoryAndStats]);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ATTENDANCE MUTATIONS
-  // ═══════════════════════════════════════════════════════════════════════════
-
+  // Attendance Status Helpers
   const handleStatusChange = (studentId: string, newStatus: AttendanceStatus) => {
     setStudents((prev) =>
       prev.map((s) => (s.studentId === studentId ? { ...s, status: newStatus } : s)),
@@ -216,9 +237,9 @@ export default function AttendanceScreen() {
     setIsDirty(true);
   };
 
-  const handleNoteChange = (studentId: string, newNote: string) => {
+  const handleNoteChange = (studentId: string, noteText: string) => {
     setStudents((prev) =>
-      prev.map((s) => (s.studentId === studentId ? { ...s, note: newNote } : s)),
+      prev.map((s) => (s.studentId === studentId ? { ...s, note: noteText } : s)),
     );
     setIsDirty(true);
   };
@@ -228,12 +249,12 @@ export default function AttendanceScreen() {
       prev.map((s) => ({
         ...s,
         status: 'PRESENT' as AttendanceStatus,
-        note: 'Đúng giờ',
       })),
     );
     setIsDirty(true);
   };
 
+  // Save Attendance to Backend
   const handleSaveAttendance = async () => {
     if (!selectedClassId) {
       Alert.alert('Lỗi', 'Vui lòng chọn lớp học');
@@ -269,32 +290,50 @@ export default function AttendanceScreen() {
     }
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // METRICS COMPUTATION
-  // ═══════════════════════════════════════════════════════════════════════════
-
+  // Metrics
   const presentCount = students.filter((s) => s.status === 'PRESENT').length;
   const excusedCount = students.filter((s) => s.status === 'EXCUSED_ABSENCE').length;
   const unexcusedCount = students.filter((s) => s.status === 'UNEXCUSED_ABSENCE').length;
   const lateCount = students.filter((s) => s.status === 'LATE').length;
 
-  const renderStudentItem = ({ item }: { item: StudentAttendanceItem }) => {
+  const renderStudentItem = ({ item, index }: { item: StudentAttendanceItem; index: number }) => {
     const isSpecialStatus = item.status !== 'PRESENT';
 
     return (
       <View style={styles.studentCard}>
-        <View style={styles.studentTopRow}>
-          <View style={styles.studentAvatar}>
-            <Text style={styles.studentAvatarText}>{item.initials || 'HS'}</Text>
+        {/* Student Name & Index */}
+        <View style={styles.studentHeaderRow}>
+          <View style={styles.studentIndexBadge}>
+            <Text style={styles.studentIndexText}>{index + 1}</Text>
           </View>
-          <View style={styles.studentInfo}>
-            <Text style={styles.studentName}>{item.name}</Text>
-            <Text style={styles.studentMeta}>{item.gender || 'Học sinh'}</Text>
-          </View>
+          <Text style={styles.studentName} numberOfLines={1}>
+            {item.name}
+          </Text>
+          {item.status && (
+            <View
+              style={[
+                styles.statusPill,
+                {
+                  backgroundColor:
+                    ATTENDANCE_STATUS_MAP.find((m) => m.key === item.status)?.bgColor || '#F1F5F9',
+                },
+              ]}>
+              <Text
+                style={[
+                  styles.statusPillText,
+                  {
+                    color:
+                      ATTENDANCE_STATUS_MAP.find((m) => m.key === item.status)?.color || '#475569',
+                  },
+                ]}>
+                {ATTENDANCE_STATUS_MAP.find((m) => m.key === item.status)?.shortLabel || item.status}
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* Status Segmented Buttons */}
-        <View style={styles.statusButtonsRow}>
+        {/* 4 Status Option Buttons */}
+        <View style={styles.statusButtonsGrid}>
           {ATTENDANCE_STATUS_MAP.map((st) => {
             const isSelected = item.status === st.key;
             return (
@@ -303,7 +342,7 @@ export default function AttendanceScreen() {
                 style={[
                   styles.statusBtn,
                   isSelected && {
-                    backgroundColor: st.color,
+                    backgroundColor: st.bgColor,
                     borderColor: st.color,
                   },
                 ]}
@@ -311,7 +350,7 @@ export default function AttendanceScreen() {
                 <Text
                   style={[
                     styles.statusBtnText,
-                    isSelected && styles.statusBtnTextSelected,
+                    isSelected && { color: st.color, fontWeight: '700' },
                   ]}>
                   {st.shortLabel}
                 </Text>
@@ -321,17 +360,17 @@ export default function AttendanceScreen() {
         </View>
 
         {/* Note / Reason field for absences or late */}
-        {isSpecialStatus ? (
+        {isSpecialStatus && (
           <View style={styles.noteInputWrapper}>
             <TextInput
               style={styles.noteInput}
-              placeholder="Nhập lý do vắng / muộn (ví dụ: Bị ốm, có phép gia đình...)"
-              placeholderTextColor="#94A3B8"
+              placeholder="Nhập lý do vắng / muộn (ví dụ: Bị ốm, xin phép gia đình...)"
+              placeholderTextColor={Colors.textMuted}
               value={item.note || ''}
               onChangeText={(text) => handleNoteChange(item.studentId, text)}
             />
           </View>
-        ) : null}
+        )}
       </View>
     );
   };
@@ -341,104 +380,147 @@ export default function AttendanceScreen() {
       <StatusBar style="dark" />
       <AppHeader title="Chuyên cần" subtitle="Điểm danh & thống kê chuyên cần" />
 
-      {/* Header Selector Box */}
+      {/* Selector Container */}
       <View style={styles.topSelectorCard}>
         {/* Class Picker */}
-        <Text style={styles.selectorHeading}>Lớp học</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.classChipsScroll}>
-          {classrooms.map((cls) => (
+        <View style={styles.controlGroup}>
+          <Text style={styles.selectorHeading}>Lớp học</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.classChipsScroll}>
+            {classrooms.map((cls) => (
+              <Pressable
+                key={cls.id}
+                style={[
+                  styles.classChip,
+                  selectedClassId === cls.id && styles.classChipActive,
+                ]}
+                onPress={() => {
+                  if (isDirty) {
+                    Alert.alert(
+                      'Thay đổi chưa lưu',
+                      'Bạn có thay đổi điểm danh chưa được lưu. Đổi lớp sẽ làm mới dữ liệu.',
+                      [
+                        { text: 'Hủy', style: 'cancel' },
+                        {
+                          text: 'Tiếp tục',
+                          onPress: () => {
+                            setSelectedClassId(cls.id);
+                            setIsDirty(false);
+                          },
+                        },
+                      ],
+                    );
+                  } else {
+                    setSelectedClassId(cls.id);
+                  }
+                }}>
+                <Text
+                  style={[
+                    styles.classChipText,
+                    selectedClassId === cls.id && styles.classChipTextActive,
+                  ]}>
+                  {cls.name}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Date Selector */}
+        <View style={styles.controlGroup}>
+          <Text style={styles.selectorHeading}>Ngày</Text>
+          <View style={styles.dateControlRow}>
             <Pressable
-              key={cls.id}
+              style={styles.dateNavBtn}
+              onPress={() => {
+                const prev = addDays(parseDateVN(selectedDate), -1);
+                const y = prev.getFullYear();
+                const m = (prev.getMonth() + 1).toString().padStart(2, '0');
+                const d = prev.getDate().toString().padStart(2, '0');
+                setSelectedDate(`${y}-${m}-${d}`);
+                setIsDirty(false);
+              }}>
+              <Text style={styles.dateNavIcon}>◀</Text>
+            </Pressable>
+
+            <View style={styles.dateDisplayBox}>
+              <Text style={styles.dateDisplayText}>
+                {formatDayHeaderVN(selectedDate)} ({formatDateVN(selectedDate)})
+              </Text>
+            </View>
+
+            <Pressable
+              style={styles.dateNavBtn}
+              onPress={() => {
+                const next = addDays(parseDateVN(selectedDate), 1);
+                const y = next.getFullYear();
+                const m = (next.getMonth() + 1).toString().padStart(2, '0');
+                const d = next.getDate().toString().padStart(2, '0');
+                setSelectedDate(`${y}-${m}-${d}`);
+                setIsDirty(false);
+              }}>
+              <Text style={styles.dateNavIcon}>▶</Text>
+            </Pressable>
+
+            <Pressable
               style={[
-                styles.classChip,
-                selectedClassId === cls.id && styles.classChipActive,
+                styles.todayBtn,
+                selectedDate === getTodayVN() && styles.todayBtnActive,
               ]}
               onPress={() => {
-                if (isDirty) {
-                  Alert.alert(
-                    'Thay đổi chưa lưu',
-                    'Bạn có thay đổi điểm danh chưa được lưu. Đổi lớp sẽ làm mới dữ liệu.',
-                    [
-                      { text: 'Hủy', style: 'cancel' },
-                      {
-                        text: 'Tiếp tục',
-                        onPress: () => {
-                          setSelectedClassId(cls.id);
-                          setIsDirty(false);
-                        },
-                      },
-                    ],
-                  );
-                } else {
-                  setSelectedClassId(cls.id);
-                }
+                setSelectedDate(getTodayVN());
+                setIsDirty(false);
               }}>
               <Text
                 style={[
-                  styles.classChipText,
-                  selectedClassId === cls.id && styles.classChipTextActive,
-                ]}>
-                {cls.name}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        {/* Date Selector Row */}
-        <View style={styles.dateSelectorRow}>
-          <View style={styles.dateInputWrapper}>
-            <Text style={styles.dateLabel}>Ngày (YYYY-MM-DD):</Text>
-            <TextInput
-              style={styles.dateInput}
-              value={selectedDate}
-              onChangeText={(d) => {
-                setSelectedDate(d);
-                setIsDirty(false);
-              }}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor="#94A3B8"
-            />
-          </View>
-
-          <View style={styles.dateQuickButtons}>
-            <Pressable
-              style={[
-                styles.quickDateBtn,
-                selectedDate === getLocalDateString() && styles.quickDateBtnActive,
-              ]}
-              onPress={() => setSelectedDate(getLocalDateString())}>
-              <Text
-                style={[
-                  styles.quickDateBtnText,
-                  selectedDate === getLocalDateString() && styles.quickDateBtnTextActive,
+                  styles.todayBtnText,
+                  selectedDate === getTodayVN() && styles.todayBtnTextActive,
                 ]}>
                 Hôm nay
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.periodBtn,
-                sessionPeriod === 'MORNING' && styles.periodBtnActive,
-              ]}
-              onPress={() =>
-                setSessionPeriod((p) => (p === 'MORNING' ? 'AFTERNOON' : 'MORNING'))
-              }>
-              <Text
-                style={[
-                  styles.periodBtnText,
-                  sessionPeriod === 'MORNING' && styles.periodBtnTextActive,
-                ]}>
-                {sessionPeriod === 'MORNING' ? '☀️ Sáng' : '⛅ Chiều'}
               </Text>
             </Pressable>
           </View>
         </View>
 
-        {/* Sub Navigation Tabs */}
+        {/* Session Period Selector */}
+        <View style={styles.controlGroup}>
+          <Text style={styles.selectorHeading}>Buổi</Text>
+          <View style={styles.periodRow}>
+            <Pressable
+              style={[
+                styles.periodOption,
+                sessionPeriod === 'MORNING' && styles.periodOptionActive,
+              ]}
+              onPress={() => setSessionPeriod('MORNING')}>
+              <Text
+                style={[
+                  styles.periodOptionText,
+                  sessionPeriod === 'MORNING' && styles.periodOptionTextActive,
+                ]}>
+                ☀️ Buổi sáng
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.periodOption,
+                sessionPeriod === 'AFTERNOON' && styles.periodOptionActive,
+              ]}
+              onPress={() => setSessionPeriod('AFTERNOON')}>
+              <Text
+                style={[
+                  styles.periodOptionText,
+                  sessionPeriod === 'AFTERNOON' && styles.periodOptionTextActive,
+                ]}>
+                ⛅ Buổi chiều
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Sub-Navigation Tabs */}
         <View style={styles.tabSwitchRow}>
           <Pressable
             style={[styles.tabSwitchBtn, activeTab === 'RECORD' && styles.tabSwitchBtnActive]}
@@ -475,18 +557,22 @@ export default function AttendanceScreen() {
               <Text style={styles.kpiVal}>{students.length}</Text>
               <Text style={styles.kpiLbl}>Sĩ số</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.kpiItem}>
               <Text style={[styles.kpiVal, { color: '#059669' }]}>{presentCount}</Text>
               <Text style={styles.kpiLbl}>Có mặt</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.kpiItem}>
               <Text style={[styles.kpiVal, { color: '#D97706' }]}>{excusedCount}</Text>
               <Text style={styles.kpiLbl}>Có phép</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.kpiItem}>
               <Text style={[styles.kpiVal, { color: '#DC2626' }]}>{unexcusedCount}</Text>
               <Text style={styles.kpiLbl}>K.Phép</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.kpiItem}>
               <Text style={[styles.kpiVal, { color: '#7C3AED' }]}>{lateCount}</Text>
               <Text style={styles.kpiLbl}>Muộn</Text>
@@ -501,13 +587,11 @@ export default function AttendanceScreen() {
                   styles.sessionStatusText,
                   isRecorded ? { color: '#059669' } : { color: '#D97706' },
                 ]}>
-                {isRecorded ? '✓ Đã lưu điểm danh' : '⏳ Chưa điểm danh'}
+                {isRecorded ? '✓ Đã lưu điểm danh' : '⏳ Chưa lưu điểm danh'}
               </Text>
             </View>
 
-            <Pressable
-              style={styles.markAllBtn}
-              onPress={handleMarkAllPresent}>
+            <Pressable style={styles.markAllBtn} onPress={handleMarkAllPresent}>
               <Text style={styles.markAllBtnText}>⚡ Tất cả có mặt</Text>
             </Pressable>
           </View>
@@ -515,7 +599,7 @@ export default function AttendanceScreen() {
           {/* Student Attendance List */}
           {loading && !refreshing ? (
             <View style={styles.centerBox}>
-              <ActivityIndicator size="large" color="#0284C7" />
+              <ActivityIndicator size="large" color={Colors.primary} />
               <Text style={styles.loadingTxt}>Đang tải danh sách học sinh...</Text>
             </View>
           ) : errorMessage ? (
@@ -547,7 +631,7 @@ export default function AttendanceScreen() {
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={handleRefresh}
-                  colors={['#0284C7']}
+                  colors={[Colors.primary]}
                 />
               }
             />
@@ -581,7 +665,7 @@ export default function AttendanceScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              colors={['#0284C7']}
+              colors={[Colors.primary]}
             />
           }>
           {/* Overall Stats Card */}
@@ -619,7 +703,7 @@ export default function AttendanceScreen() {
           <Text style={styles.historyHeading}>Lịch sử điểm danh gần đây</Text>
 
           {loadingHistory && !refreshing ? (
-            <ActivityIndicator size="small" color="#0284C7" style={{ marginVertical: 20 }} />
+            <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} />
           ) : historyItems.length === 0 ? (
             <View style={styles.emptyCard}>
               <Text style={styles.emptyIcon}>📜</Text>
@@ -653,147 +737,167 @@ export default function AttendanceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Colors.background,
   },
   topSelectorCard: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 6,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  controlGroup: {
+    gap: 4,
   },
   selectorHeading: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
-    marginBottom: 6,
+    color: Colors.textSecondary,
   },
   classChipsScroll: {
-    gap: 8,
-    paddingBottom: 8,
+    gap: Spacing.xs,
+    paddingVertical: 2,
   },
   classChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    paddingHorizontal: Spacing.md,
+    height: 38,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   classChipActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: Colors.primaryBg,
+    borderColor: Colors.primary,
   },
   classChipText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#475569',
+    color: Colors.textSecondary,
   },
   classChipTextActive: {
-    color: '#FFFFFF',
-  },
-  dateSelectorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginVertical: 6,
-    gap: 8,
-  },
-  dateInputWrapper: {
-    flex: 1,
-  },
-  dateLabel: {
-    fontSize: 11,
-    color: '#64748B',
-    marginBottom: 2,
-    fontWeight: '600',
-  },
-  dateInput: {
-    height: 36,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    fontSize: 13,
-    color: '#0F172A',
-    backgroundColor: '#F8FAFC',
-  },
-  dateQuickButtons: {
-    flexDirection: 'row',
-    gap: 6,
-    alignItems: 'flex-end',
-  },
-  quickDateBtn: {
-    paddingHorizontal: 10,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickDateBtnActive: {
-    backgroundColor: '#E0F2FE',
-    borderColor: '#0284C7',
-  },
-  quickDateBtnText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  quickDateBtnTextActive: {
-    color: '#0284C7',
+    color: Colors.primary,
     fontWeight: '700',
   },
-  periodBtn: {
-    paddingHorizontal: 10,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+  dateControlRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  dateNavBtn: {
+    width: 38,
+    height: 42,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  periodBtnActive: {
+  dateNavIcon: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  dateDisplayBox: {
+    flex: 1,
+    height: 42,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.sm,
+  },
+  dateDisplayText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  todayBtn: {
+    paddingHorizontal: Spacing.md,
+    height: 42,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  todayBtnActive: {
+    backgroundColor: Colors.primaryBg,
+    borderColor: Colors.primary,
+  },
+  todayBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  todayBtnTextActive: {
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+  periodRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  periodOption: {
+    flex: 1,
+    height: 40,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  periodOptionActive: {
     backgroundColor: '#FEF3C7',
     borderColor: '#FDE68A',
   },
-  periodBtnText: {
-    fontSize: 11,
+  periodOptionText: {
+    fontSize: 13,
     fontWeight: '600',
-    color: '#475569',
+    color: Colors.textSecondary,
   },
-  periodBtnTextActive: {
+  periodOptionTextActive: {
     color: '#92400E',
     fontWeight: '700',
   },
   tabSwitchRow: {
     flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 10,
+    backgroundColor: Colors.surfaceMuted,
+    borderRadius: Radius.lg,
     padding: 3,
-    marginTop: 6,
+    marginTop: 4,
     marginBottom: 4,
   },
   tabSwitchBtn: {
     flex: 1,
-    paddingVertical: 6,
+    height: 38,
     alignItems: 'center',
-    borderRadius: 8,
+    justifyContent: 'center',
+    borderRadius: Radius.md,
   },
   tabSwitchBtnActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.surface,
+    shadowColor: Colors.textPrimary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
   },
   tabSwitchText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
+    color: Colors.textSecondary,
   },
   tabSwitchTextActive: {
-    color: '#0284C7',
+    color: Colors.primary,
     fontWeight: '700',
   },
   recordContent: {
@@ -801,33 +905,40 @@ const styles = StyleSheet.create({
   },
   kpiBanner: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    backgroundColor: Colors.surface,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    justifyContent: 'space-around',
+    borderBottomColor: Colors.border,
+    alignItems: 'center',
   },
   kpiItem: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   kpiVal: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: Colors.textPrimary,
   },
   kpiLbl: {
     fontSize: 10,
-    color: '#64748B',
+    color: Colors.textSecondary,
     marginTop: 2,
     fontWeight: '600',
+  },
+  statDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: Colors.borderLight,
   },
   actionToolbar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   sessionStatusBadge: {
     flexDirection: 'row',
@@ -838,229 +949,188 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   markAllBtn: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: Colors.successBg,
     borderWidth: 1,
     borderColor: '#BBF7D0',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: Radius.md,
   },
   markAllBtnText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#15803D',
+    color: Colors.success,
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 80,
-    gap: 10,
-    paddingTop: 4,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: 110,
+    gap: Spacing.sm,
+    paddingTop: Spacing.xs,
   },
   studentCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 8,
+    borderColor: Colors.border,
+    shadowColor: Colors.textPrimary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+    gap: Spacing.sm,
   },
-  studentTopRow: {
+  studentHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: Spacing.xs,
   },
-  studentAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#0284C7',
+  studentIndexBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
   },
-  studentAvatarText: {
-    color: '#FFFFFF',
-    fontSize: 13,
+  studentIndexText: {
+    fontSize: 11,
     fontWeight: '700',
-  },
-  studentInfo: {
-    flex: 1,
+    color: Colors.textSecondary,
   },
   studentName: {
+    ...Typography.titleSmall,
+    flex: 1,
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
+    color: Colors.textPrimary,
   },
-  studentMeta: {
+  statusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.xs,
+  },
+  statusPillText: {
     fontSize: 11,
-    color: '#64748B',
-    marginTop: 1,
+    fontWeight: '700',
   },
-  statusButtonsRow: {
+  statusButtonsGrid: {
     flexDirection: 'row',
-    gap: 6,
+    gap: Spacing.xs,
   },
   statusBtn: {
     flex: 1,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#F8FAFC',
+    height: 38,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   statusBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#475569',
-  },
-  statusBtnTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: Colors.textSecondary,
   },
   noteInputWrapper: {
-    marginTop: 4,
+    marginTop: 2,
   },
   noteInput: {
-    height: 36,
-    backgroundColor: '#FFFBEB',
+    height: 38,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: '#FDE68A',
-    borderRadius: 8,
-    paddingHorizontal: 10,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.md,
     fontSize: 12,
-    color: '#92400E',
+    color: Colors.textPrimary,
   },
   footerBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: Colors.border,
+    shadowColor: Colors.textPrimary,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
   },
   saveBtn: {
+    backgroundColor: Colors.primary,
     height: 46,
-    backgroundColor: '#0284C7',
-    borderRadius: 12,
+    borderRadius: Radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   saveBtnDisabled: {
-    backgroundColor: '#94A3B8',
+    opacity: 0.7,
   },
   saveBtnText: {
-    color: '#FFFFFF',
+    color: Colors.textWhite,
     fontSize: 14,
     fontWeight: '700',
   },
-  centerBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 48,
-  },
-  loadingTxt: {
-    marginTop: 12,
-    fontSize: 13,
-    color: '#64748B',
-  },
-  errIcon: {
-    fontSize: 36,
-    marginBottom: 8,
-  },
-  errTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  errTxt: {
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  retryBtn: {
-    backgroundColor: '#0284C7',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  retryBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  emptyIcon: {
-    fontSize: 40,
-    marginBottom: 8,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  emptyTxt: {
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 16,
-  },
   historyContent: {
-    padding: 16,
-    gap: 12,
-    paddingBottom: 32,
+    padding: Spacing.md,
+    paddingBottom: 100,
+    gap: Spacing.md,
   },
   statsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
+    gap: Spacing.md,
   },
   statsHeading: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 10,
+    color: Colors.textPrimary,
   },
   statsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
   statBox: {
+    width: '48%',
+    backgroundColor: Colors.surfaceMuted,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   statNum: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#0F172A',
+    color: Colors.textPrimary,
   },
   statLbl: {
-    fontSize: 10,
-    color: '#64748B',
-    marginTop: 2,
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 4,
     fontWeight: '600',
   },
   historyHeading: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#0F172A',
-    marginTop: 4,
+    color: Colors.textSecondary,
   },
   historyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 4,
+    borderColor: Colors.border,
+    gap: Spacing.xs,
   },
   historyTop: {
     flexDirection: 'row',
@@ -1070,40 +1140,87 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
+    color: Colors.textPrimary,
   },
   historyBadge: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: Colors.successBg,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.xs,
   },
   historyBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#15803D',
+    color: Colors.success,
   },
   historyMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     marginTop: 4,
   },
   historySubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: Colors.textSecondary,
   },
   historyMeta: {
     fontSize: 12,
-    color: '#0284C7',
+    color: Colors.textSecondary,
     fontWeight: '600',
   },
+  centerBox: {
+    padding: Spacing.xxl,
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  loadingTxt: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  errIcon: {
+    fontSize: 32,
+  },
+  errTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.danger,
+  },
+  errTxt: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: Radius.md,
+    marginTop: Spacing.xs,
+  },
+  retryBtnText: {
+    color: Colors.textWhite,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.xl,
+    padding: Spacing.xxl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
+    gap: Spacing.xs,
+  },
+  emptyIcon: {
+    fontSize: 32,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  emptyTxt: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
 });

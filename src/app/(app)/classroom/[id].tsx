@@ -315,6 +315,57 @@ export default function ClassroomDetailScreen() {
           </View>
         </View>
 
+        {/* Quick Actions Grid (2 columns on mobile) */}
+        <View style={styles.actionGrid}>
+          <Pressable
+            style={({ pressed }) => [styles.actionGridItem, pressed && styles.buttonPressed]}
+            onPress={() => {
+              router.push({
+                pathname: '/attendance',
+                params: { classId: classroom.id },
+              });
+            }}>
+            <Text style={styles.actionGridIcon}>📋</Text>
+            <Text style={styles.actionGridText}>Điểm danh</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.actionGridItem, pressed && styles.buttonPressed]}
+            onPress={() => {
+              router.push({
+                pathname: '/lesson-plans',
+                params: { classroomId: classroom.id },
+              });
+            }}>
+            <Text style={styles.actionGridIcon}>📖</Text>
+            <Text style={styles.actionGridText}>Giáo án</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.actionGridItem, pressed && styles.buttonPressed]}
+            onPress={() => {
+              router.push({
+                pathname: '/worksheets',
+                params: { classroomId: classroom.id },
+              });
+            }}>
+            <Text style={styles.actionGridIcon}>📑</Text>
+            <Text style={styles.actionGridText}>Phiếu bài tập</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.actionGridItem, pressed && styles.buttonPressed]}
+            onPress={() => {
+              router.push({
+                pathname: '/assessments',
+                params: { classroomId: classroom.id },
+              });
+            }}>
+            <Text style={styles.actionGridIcon}>📊</Text>
+            <Text style={styles.actionGridText}>Đánh giá</Text>
+          </Pressable>
+        </View>
+
         {/* Section Tabs */}
         <View style={styles.tabButtonsRow}>
           <Pressable
@@ -360,64 +411,11 @@ export default function ClassroomDetailScreen() {
 
               <Pressable
                 style={({ pressed }) => [
-                  styles.attendanceBtn,
-                  pressed && styles.buttonPressed,
-                ]}
-                onPress={() => {
-                  router.push({
-                    pathname: '/attendance',
-                    params: { classId: classroom.id },
-                  });
-                }}>
-                <Text style={styles.attendanceBtnText}>📋 Điểm danh</Text>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.attendanceBtn,
-                  pressed && styles.buttonPressed,
-                ]}
-                onPress={() => {
-                  router.push({
-                    pathname: '/lesson-plans',
-                  });
-                }}>
-                <Text style={styles.attendanceBtnText}>📖 Giáo án</Text>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.attendanceBtn,
-                  pressed && styles.buttonPressed,
-                ]}
-                onPress={() => {
-                  router.push({
-                    pathname: '/worksheets',
-                  });
-                }}>
-                <Text style={styles.attendanceBtnText}>📑 Phiếu bài</Text>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.attendanceBtn,
-                  pressed && styles.buttonPressed,
-                ]}
-                onPress={() => {
-                  router.push({
-                    pathname: '/assessments',
-                  });
-                }}>
-                <Text style={styles.attendanceBtnText}>📊 Đánh giá</Text>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
                   styles.addStudentBtn,
                   pressed && styles.buttonPressed,
                 ]}
                 onPress={() => setShowAddModal(true)}>
-                <Text style={styles.addStudentBtnText}>＋ Thêm</Text>
+                <Text style={styles.addStudentBtnText}>＋ Thêm HS</Text>
               </Pressable>
             </View>
 
@@ -643,7 +641,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 96,
   },
   bannerCard: {
     backgroundColor: '#FFFFFF',
@@ -718,29 +716,64 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginTop: 14,
     borderRadius: 14,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     alignItems: 'center',
-    justifyContent: 'space-around',
   },
   bannerStatItem: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   bannerStatValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
   },
   bannerStatLabel: {
     fontSize: 11,
     color: '#64748B',
-    marginTop: 2,
+    marginTop: 3,
+    fontWeight: '600',
   },
   statDivider: {
     width: 1,
-    height: 20,
+    height: 24,
     backgroundColor: '#E2E8F0',
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+    justifyContent: 'space-between',
+  },
+  actionGridItem: {
+    width: '48.5%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 6,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  actionGridIcon: {
+    fontSize: 16,
+  },
+  actionGridText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   tabButtonsRow: {
     flexDirection: 'row',
@@ -787,10 +820,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    height: 42,
+    height: 44,
   },
   searchIcon: {
     fontSize: 13,
@@ -801,25 +834,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#0F172A',
   },
-  attendanceBtn: {
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-    paddingHorizontal: 12,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  attendanceBtnText: {
-    color: '#0369A1',
-    fontSize: 13,
-    fontWeight: '700',
-  },
   addStudentBtn: {
     backgroundColor: '#0284C7',
     paddingHorizontal: 14,
-    height: 42,
+    height: 44,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',

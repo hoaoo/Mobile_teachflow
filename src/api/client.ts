@@ -462,6 +462,97 @@ export interface MonthlySummaryData {
   }[];
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SCHEDULE TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type ScheduleStatus = 'PLANNED' | 'IN_PROGRESS' | 'TAUGHT' | 'CANCELLED';
+
+export interface ScheduleItem {
+  id: string;
+  teacherId: string;
+  title?: string;
+  status: ScheduleStatus;
+  isManualStatus?: boolean;
+  room?: string | null;
+  notes?: string | null;
+  postLessonNotes?: string | null;
+  actualStartTime?: string | null;
+  actualEndTime?: string | null;
+  plannedDate: string;
+  startTime: string;
+  endTime: string;
+  classroomId: string;
+  classroom?: {
+    id: string;
+    name: string;
+    code: string;
+    gradeName?: string | null;
+    room?: string | null;
+  };
+  subjectId?: string | null;
+  subjectName?: string | null;
+  subject?: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  schoolYearId?: string | null;
+  schoolYear?: {
+    id: string;
+    name: string;
+    isCurrent: boolean;
+  };
+  lessonPlanId?: string | null;
+  lessonPlan?: {
+    id: string;
+    title: string;
+    status: string;
+    objectives?: string | null;
+  } | null;
+  attendance?: {
+    id?: string;
+    isRecorded: boolean;
+    status?: string;
+    totalStudents: number;
+    presentCount: number;
+    absentCount: number;
+    lateCount: number;
+  };
+}
+
+export interface DashboardScheduleItem {
+  id: string;
+  time: string;
+  startTime: string;
+  endTime: string;
+  plannedDate: string | null;
+  status: ScheduleStatus;
+  isManualStatus: boolean;
+  subject: string;
+  title: string;
+  className: string;
+  classroomId?: string;
+  gradeName?: string | null;
+  room: string;
+  hasLessonPlan: boolean;
+  lessonPlanId: string | null;
+  lessonPlanTitle: string | null;
+  attendanceRecorded: boolean;
+  attendanceLabel: string;
+  attendancePresentCount: number;
+  attendanceTotalCount: number;
+  color?: string;
+}
+
+export interface UpdateScheduleStatusRequest {
+  status: ScheduleStatus;
+  actualStartTime?: string;
+  actualEndTime?: string;
+  postLessonNotes?: string;
+  isManualStatus?: boolean;
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly statusCode: number,
@@ -908,6 +999,53 @@ class ApiClient {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // SCHEDULES
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getSchedules(params?: {
+    classroomId?: string;
+    subjectId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    status?: string;
+    search?: string;
+  }): Promise<ScheduleItem[]> {
+    const qs = params ? this.buildQueryString(params) : '';
+    const res = await this.request<ScheduleItem[]>(`/schedules${qs}`, {
+      method: 'GET',
+    });
+    return Array.isArray(res) ? res : [];
+  }
+
+  async getScheduleById(id: string): Promise<ScheduleItem> {
+    return this.request<ScheduleItem>(`/schedules/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  async getDashboardSchedule(params?: {
+    date?: string;
+    from?: string;
+    to?: string;
+  }): Promise<DashboardScheduleItem[]> {
+    const qs = params ? this.buildQueryString(params) : '';
+    const res = await this.request<DashboardScheduleItem[]>(`/dashboard/schedule${qs}`, {
+      method: 'GET',
+    });
+    return Array.isArray(res) ? res : [];
+  }
+
+  async updateScheduleStatus(
+    id: string,
+    dto: UpdateScheduleStatusRequest,
+  ): Promise<ScheduleItem> {
+    return this.request<ScheduleItem>(`/schedules/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // LESSON PLANS
   // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1268,7 +1406,7 @@ export interface StudentAttendanceItem {
 
 export interface AttendanceDailyResponse {
   classId: string;
-  className: string;
+  className?: string;
   date: string;
   isRecorded: boolean;
   totalStudents: number;
@@ -1276,12 +1414,13 @@ export interface AttendanceDailyResponse {
   absentCount: number;
   lateCount: number;
   students: StudentAttendanceItem[];
+  items?: StudentAttendanceItem[];
 }
 
 export interface SaveAttendanceRequest {
   classId: string;
   date: string;
-  sessionPeriod?: string;
+  sessionPeriod?: 'MORNING' | 'AFTERNOON' | string;
   attendances: {
     studentId: string;
     status?: AttendanceStatus;

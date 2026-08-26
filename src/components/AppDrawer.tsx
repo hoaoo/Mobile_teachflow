@@ -47,6 +47,7 @@ const SECTIONS: DrawerSection[] = [
   {
     title: 'GIẢNG DẠY',
     items: [
+      { key: 'schedule', label: 'Lịch dạy', icon: '📅', route: '/schedule' },
       { key: 'lesson-plans', label: 'Giáo án', icon: '📖', route: '/lesson-plans' },
       { key: 'worksheets', label: 'Phiếu bài tập', icon: '📝', route: '/worksheets' },
       { key: 'assessments', label: 'Đánh giá', icon: '📊', route: '/assessments' },
