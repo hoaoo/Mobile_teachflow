@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import { DrawerProvider } from '@/context/drawer-context';
 import { NotificationProvider } from '@/context/notification-context';
+import { PushNotificationProvider } from '@/features/push-notifications';
 import { AppDrawer } from '@/components/AppDrawer';
 import { AccountMenuModal } from '@/components/AccountMenuModal';
 import { FloatingAiAssistant } from '@/components/FloatingAiAssistant';
@@ -11,7 +12,8 @@ export default function AppLayout() {
   return (
     <DrawerProvider>
       <NotificationProvider>
-        <View style={{ flex: 1 }}>
+        <PushNotificationProvider>
+          <View style={{ flex: 1 }}>
           <Stack
             screenOptions={{
               headerShown: false,
@@ -277,6 +279,7 @@ export default function AppLayout() {
           <AppDrawer />
           <AccountMenuModal />
         </View>
+        </PushNotificationProvider>
       </NotificationProvider>
     </DrawerProvider>
   );

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -13,11 +14,13 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '@/auth';
 import { apiClient } from '@/api/client';
+import { usePushNotification } from '@/features/push-notifications';
 import { AppHeader } from '@/components/AppHeader';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
 
 export default function ProfileScreen() {
   const { user, logout, refreshUser } = useAuth();
+  const { permissionStatus, isRegistered, requestPermission } = usePushNotification();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Edit Profile State
@@ -151,6 +154,68 @@ export default function ProfileScreen() {
               <View style={styles.statusDot} />
               <Text style={styles.statusText}>Đang hoạt động</Text>
             </View>
+          </View>
+        </View>
+
+        {/* Push Notification Section */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>THÔNG BÁO & PUSH</Text>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Trạng thái Push</Text>
+            <View style={styles.statusRow}>
+              <View
+                style={[
+                  styles.statusDot,
+                  { backgroundColor: isRegistered ? '#059669' : '#D97706' },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.statusText,
+                  { color: isRegistered ? '#059669' : '#D97706' },
+                ]}>
+                {isRegistered
+                  ? 'Đã kết nối nhận tin'
+                  : permissionStatus === 'denied'
+                    ? 'Đã tắt trong Cài đặt'
+                    : 'Chưa kích hoạt'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.notifActionRow}>
+            <Text style={styles.notifDescText}>
+              Nhận thông báo nhắc lịch dạy, hạn công việc và chuyên cần tức thì ngay cả khi đóng ứng dụng.
+            </Text>
+
+            {!isRegistered ? (
+              <Pressable
+                style={styles.notifActionBtn}
+                onPress={async () => {
+                  if (permissionStatus === 'denied') {
+                    Linking.openSettings();
+                  } else {
+                    const granted = await requestPermission();
+                    if (!granted) {
+                      Alert.alert(
+                        'Cần cấp quyền thông báo',
+                        'Vui lòng cho phép quyền thông báo để nhận nhắc nhở lịch dạy và nhiệm vụ kịp thời.',
+                        [
+                          { text: 'Đóng', style: 'cancel' },
+                          { text: 'Mở Cài đặt', onPress: () => Linking.openSettings() },
+                        ],
+                      );
+                    }
+                  }
+                }}>
+                <Text style={styles.notifActionBtnText}>
+                  {permissionStatus === 'denied' ? '⚙️ Mở Cài đặt' : '🔔 Bật thông báo'}
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         </View>
 
@@ -387,6 +452,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: Colors.success,
+  },
+  notifActionRow: {
+    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  notifDescText: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    lineHeight: 16,
+  },
+  notifActionBtn: {
+    backgroundColor: Colors.primaryBg,
+    borderWidth: 1,
+    borderColor: Colors.primaryBorder,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+  notifActionBtnText: {
+    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
   },
   editProfileBtn: {
     height: 46,

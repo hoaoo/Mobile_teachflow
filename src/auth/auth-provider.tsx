@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { apiClient, type LoginRequest, type UserResponse } from '@/api/client';
+import { unregisterPushNotificationsAsync } from '@/features/push-notifications';
 import { tokenStorage } from '@/services/storage.service';
 import { AuthContext } from './auth-context';
 
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
+      await unregisterPushNotificationsAsync().catch(() => {});
       await apiClient.logout();
     } catch {
       // Continue clearing client credentials even if backend logout fails

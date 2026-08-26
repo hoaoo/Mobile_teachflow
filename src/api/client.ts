@@ -1401,6 +1401,20 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  async registerDevice(dto: RegisterDeviceRequest): Promise<DeviceRegistrationResponse> {
+    return this.request<DeviceRegistrationResponse>('/notifications/devices', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async unregisterDevice(dto: UnregisterDeviceRequest): Promise<DeviceRegistrationResponse> {
+    return this.request<DeviceRegistrationResponse>('/notifications/devices/unregister', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1986,5 +2000,21 @@ export interface GeneratedHomeroomSummaryAIData {
   nextSteps: string[];
 }
 
-export const apiClient = new ApiClient();
+export interface RegisterDeviceRequest {
+  expoPushToken: string;
+  platform?: 'ANDROID' | 'IOS' | 'WEB';
+  deviceId?: string;
+  deviceModel?: string;
+  appVersion?: string;
+}
 
+export interface UnregisterDeviceRequest {
+  expoPushToken: string;
+}
+
+export interface DeviceRegistrationResponse {
+  success: boolean;
+  message: string;
+}
+
+export const apiClient = new ApiClient();
