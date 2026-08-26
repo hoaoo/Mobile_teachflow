@@ -249,6 +249,16 @@ export default function AppLayout() {
           headerTitleStyle: { fontWeight: '700', color: '#0F172A' },
         }}
       />
+      <Stack.Screen
+        name="ai/questions"
+        options={{
+          headerShown: true,
+          title: '❓ Ngân hàng Câu hỏi Bloom',
+          headerBackTitle: 'Quay lại',
+          headerTintColor: '#0284C7',
+          headerTitleStyle: { fontWeight: '700', color: '#0F172A' },
+        }}
+      />
     </Stack>
   );
 }
