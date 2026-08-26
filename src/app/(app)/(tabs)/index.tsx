@@ -100,7 +100,7 @@ export default function DashboardScreen() {
         <View style={styles.authSuccessCard}>
           <Text style={styles.authSuccessTitle}>✓ Xác thực thành công</Text>
           <Text style={styles.authSuccessText}>
-            Phiên làm việc bảo mật thông qua SecureStore & Bearer JWT. Bạn đã sẵn sàng sử dụng các tính năng TeachFlow Mobile.
+            Phiên làm việc bảo mật qua SecureStore & Bearer JWT. Kết nối đồng bộ dữ liệu trực tiếp với Web và Backend.
           </Text>
         </View>
 
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingTop: 32,
+    paddingTop: 16,
   },
   headerCard: {
     flexDirection: 'row',
