@@ -49,6 +49,56 @@ export default function AppLayout() {
           headerTitleStyle: { fontWeight: '700', color: '#0F172A' },
         }}
       />
+      <Stack.Screen
+        name="attendance/index"
+        options={{
+          headerShown: true,
+          title: 'Điểm danh & Chuyên cần',
+          headerBackTitle: 'Quay lại',
+          headerTintColor: '#0284C7',
+          headerTitleStyle: { fontWeight: '700', color: '#0F172A' },
+        }}
+      />
+      <Stack.Screen
+        name="lesson-plans/index"
+        options={{
+          headerShown: true,
+          title: 'Kế hoạch bài dạy (Giáo án)',
+          headerBackTitle: 'Quay lại',
+          headerTintColor: '#0284C7',
+          headerTitleStyle: { fontWeight: '700', color: '#0F172A' },
+        }}
+      />
+      <Stack.Screen
+        name="lesson-plans/[id]"
+        options={{
+          headerShown: true,
+          title: 'Chi tiết giáo án',
+          headerBackTitle: 'Quay lại',
+          headerTintColor: '#0284C7',
+          headerTitleStyle: { fontWeight: '700', color: '#0F172A' },
+        }}
+      />
+      <Stack.Screen
+        name="lesson-plans/create"
+        options={{
+          headerShown: true,
+          title: 'Soạn giáo án mới',
+          headerBackTitle: 'Hủy',
+          headerTintColor: '#0284C7',
+          headerTitleStyle: { fontWeight: '700', color: '#0F172A' },
+        }}
+      />
+      <Stack.Screen
+        name="lesson-plans/edit"
+        options={{
+          headerShown: true,
+          title: 'Chỉnh sửa giáo án',
+          headerBackTitle: 'Hủy',
+          headerTintColor: '#0284C7',
+          headerTitleStyle: { fontWeight: '700', color: '#0F172A' },
+        }}
+      />
     </Stack>
   );
 }

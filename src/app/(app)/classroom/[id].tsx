@@ -360,6 +360,33 @@ export default function ClassroomDetailScreen() {
 
               <Pressable
                 style={({ pressed }) => [
+                  styles.attendanceBtn,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/attendance',
+                    params: { classId: classroom.id },
+                  });
+                }}>
+                <Text style={styles.attendanceBtnText}>📋 Điểm danh</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.attendanceBtn,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/lesson-plans/index',
+                  });
+                }}>
+                <Text style={styles.attendanceBtnText}>📖 Giáo án</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
                   styles.addStudentBtn,
                   pressed && styles.buttonPressed,
                 ]}
@@ -747,6 +774,21 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: '#0F172A',
+  },
+  attendanceBtn: {
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    paddingHorizontal: 12,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attendanceBtnText: {
+    color: '#0369A1',
+    fontSize: 13,
+    fontWeight: '700',
   },
   addStudentBtn: {
     backgroundColor: '#0284C7',

@@ -821,6 +821,321 @@ class ApiClient {
       body: JSON.stringify(dto),
     });
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ATTENDANCE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getAttendance(classId?: string, date?: string): Promise<AttendanceDailyResponse> {
+    const qs = this.buildQueryString({ classId, date });
+    return this.request<AttendanceDailyResponse>(`/attendance${qs}`, {
+      method: 'GET',
+    });
+  }
+
+  async saveAttendance(dto: SaveAttendanceRequest): Promise<{ success: boolean; message: string; sessionId?: string }> {
+    return this.request<{ success: boolean; message: string; sessionId?: string }>('/attendance', {
+      method: 'PUT',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async getAttendanceHistory(): Promise<AttendanceHistoryItem[]> {
+    return this.request<AttendanceHistoryItem[]>('/attendance/history', {
+      method: 'GET',
+    });
+  }
+
+  async getAttendanceStats(params?: { classId?: string; dateFrom?: string; dateTo?: string }): Promise<AttendanceStatsData> {
+    const qs = params ? this.buildQueryString(params) : '';
+    return this.request<AttendanceStatsData>(`/attendance/stats${qs}`, {
+      method: 'GET',
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TEACHER TASKS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getTasks(): Promise<TeacherTaskItem[]> {
+    return this.request<TeacherTaskItem[]>('/tasks', {
+      method: 'GET',
+    });
+  }
+
+  async createTask(dto: CreateTeacherTaskRequest): Promise<TeacherTaskItem> {
+    return this.request<TeacherTaskItem>('/tasks', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async updateTask(id: string, dto: UpdateTeacherTaskRequest): Promise<TeacherTaskItem> {
+    return this.request<TeacherTaskItem>(`/tasks/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async deleteTask(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/tasks/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LESSON PLANS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getLessonPlans(params?: {
+    classroomId?: string;
+    subjectId?: string;
+    status?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<LessonPlanItem[]> {
+    const qs = params ? this.buildQueryString(params) : '';
+    const res = await this.request<LessonPlanItem[]>(`/lesson-plans${qs}`, {
+      method: 'GET',
+    });
+    return Array.isArray(res) ? res : [];
+  }
+
+  async getLessonPlanById(id: string): Promise<LessonPlanItem> {
+    return this.request<LessonPlanItem>(`/lesson-plans/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  async createLessonPlan(dto: CreateLessonPlanRequest): Promise<LessonPlanItem> {
+    return this.request<LessonPlanItem>('/lesson-plans', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async updateLessonPlan(id: string, dto: UpdateLessonPlanRequest): Promise<LessonPlanItem> {
+    return this.request<LessonPlanItem>(`/lesson-plans/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async deleteLessonPlan(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/lesson-plans/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async duplicateLessonPlan(id: string): Promise<LessonPlanItem> {
+    return this.request<LessonPlanItem>(`/lesson-plans/${id}/duplicate`, {
+      method: 'POST',
+    });
+  }
+
+  async generateLessonPlanAI(dto: GenerateLessonPlanAIRequest): Promise<GeneratedLessonPlanAIData> {
+    return this.request<GeneratedLessonPlanAIData>('/ai/lesson-plan', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  getLessonPlanExportDocxUrl(id: string): string {
+    return `${this.baseUrl}/lesson-plans/${id}/export/docx`;
+  }
+
+  getLessonPlanExportPdfUrl(id: string): string {
+    return `${this.baseUrl}/lesson-plans/${id}/export/pdf`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TEACHER TASK TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface TeacherTaskItem {
+  id: string;
+  title: string;
+  due: string;
+  done: boolean;
+  taskDate?: string;
+  priority?: string;
+  completedAt?: string | null;
+}
+
+export interface CreateTeacherTaskRequest {
+  title: string;
+  due?: string;
+  done?: boolean;
+}
+
+export interface UpdateTeacherTaskRequest {
+  title?: string;
+  due?: string;
+  done?: boolean;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ATTENDANCE TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type AttendanceStatus =
+  | 'PRESENT'
+  | 'EXCUSED_ABSENCE'
+  | 'UNEXCUSED_ABSENCE'
+  | 'LATE';
+
+export interface StudentAttendanceItem {
+  studentId: string;
+  name: string;
+  initials?: string;
+  gender?: string;
+  status: AttendanceStatus;
+  lateMinutes?: number;
+  note?: string;
+}
+
+export interface AttendanceDailyResponse {
+  classId: string;
+  className: string;
+  date: string;
+  isRecorded: boolean;
+  totalStudents: number;
+  presentCount: number;
+  absentCount: number;
+  lateCount: number;
+  students: StudentAttendanceItem[];
+}
+
+export interface SaveAttendanceRequest {
+  classId: string;
+  date: string;
+  sessionPeriod?: string;
+  attendances: {
+    studentId: string;
+    status?: AttendanceStatus;
+    note?: string;
+  }[];
+}
+
+export interface AttendanceHistoryItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  status: string;
+  meta: string;
+  tone: string;
+}
+
+export interface AttendanceStatsData {
+  totalSessions: number;
+  totalRecorded: number;
+  presentCount: number;
+  excusedCount: number;
+  unexcusedCount: number;
+  lateCount: number;
+  absentCount: number;
+  overallRate: number;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LESSON PLAN TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type LessonPlanStatus = 'DRAFT' | 'COMPLETED' | 'TAUGHT';
+
+export interface LessonPlanActivityItem {
+  id?: string;
+  phase?: string;
+  title: string;
+  minutes?: number;
+  method?: string;
+  technique?: string;
+  competencies?: string;
+  qualities?: string;
+  equipment?: string;
+  objective?: string;
+  teacher?: string;
+  students?: string;
+  sortOrder?: number;
+}
+
+export interface LessonPlanItem {
+  id: string;
+  title: string;
+  topic?: string;
+  subject: string;
+  grade: string;
+  classroomId?: string | null;
+  subjectId?: string | null;
+  date: string;
+  duration: number;
+  objective: string;
+  specificCompetencies?: string;
+  generalCompetencies?: string;
+  qualities?: string;
+  teachingEquipment?: string;
+  postLessonAdjustment?: string;
+  notes?: string;
+  status: LessonPlanStatus;
+  version: number;
+  activities: LessonPlanActivityItem[];
+  activitiesCount?: number;
+  schedulesCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateLessonPlanRequest {
+  title: string;
+  topic?: string;
+  subject?: string;
+  grade?: string;
+  date?: string;
+  duration?: number;
+  objective?: string;
+  specificCompetencies?: string;
+  generalCompetencies?: string;
+  qualities?: string;
+  teachingEquipment?: string;
+  postLessonAdjustment?: string;
+  notes?: string;
+  status?: LessonPlanStatus;
+  classroomId?: string;
+  subjectId?: string;
+  activities?: LessonPlanActivityItem[];
+}
+
+export interface UpdateLessonPlanRequest extends Partial<CreateLessonPlanRequest> {
+  version?: number;
+}
+
+export interface GenerateLessonPlanAIRequest {
+  grade: number;
+  subject: string;
+  lessonTitle: string;
+  durationMinutes?: number;
+  requirements?: string;
+  numberOfPeriods?: number;
+  objectives?: string;
+  qualities?: string;
+  competencies?: string;
+}
+
+export interface GeneratedLessonPlanAIData {
+  title: string;
+  topic?: string;
+  subject: string;
+  grade: string;
+  duration: number;
+  objective: string;
+  specificCompetencies?: string;
+  generalCompetencies?: string;
+  qualities?: string;
+  teachingEquipment?: string;
+  activities: LessonPlanActivityItem[];
 }
 
 export const apiClient = new ApiClient();
+

@@ -758,23 +758,35 @@ export default function HomeroomScreen() {
               <View style={styles.quickActionButtons}>
                 <Pressable
                   style={styles.quickBtn}
+                  onPress={() => {
+                    router.push({
+                      pathname: '/attendance',
+                      params: { classId: selectedClassId },
+                    });
+                  }}>
+                  <Text style={styles.quickBtnIcon}>📋</Text>
+                  <Text style={styles.quickBtnText}>Điểm danh</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.quickBtn}
                   onPress={openAddBehaviorModal}>
                   <Text style={styles.quickBtnIcon}>⭐</Text>
-                  <Text style={styles.quickBtnText}>Ghi nhận nề nếp</Text>
+                  <Text style={styles.quickBtnText}>Ghi nề nếp</Text>
                 </Pressable>
 
                 <Pressable
                   style={styles.quickBtn}
                   onPress={() => setActiveTab('WEEKLY_REVIEW')}>
                   <Text style={styles.quickBtnIcon}>📝</Text>
-                  <Text style={styles.quickBtnText}>Nhận xét tuần</Text>
+                  <Text style={styles.quickBtnText}>Nhận xét</Text>
                 </Pressable>
 
                 <Pressable
                   style={styles.quickBtn}
                   onPress={() => setActiveTab('MONTHLY_REVIEW')}>
                   <Text style={styles.quickBtnIcon}>📈</Text>
-                  <Text style={styles.quickBtnText}>Báo cáo tháng</Text>
+                  <Text style={styles.quickBtnText}>Báo cáo</Text>
                 </Pressable>
               </View>
             </View>
