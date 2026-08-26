@@ -379,7 +379,7 @@ export default function ClassroomDetailScreen() {
                 ]}
                 onPress={() => {
                   router.push({
-                    pathname: '/lesson-plans/index',
+                    pathname: '/lesson-plans',
                   });
                 }}>
                 <Text style={styles.attendanceBtnText}>📖 Giáo án</Text>
@@ -392,7 +392,7 @@ export default function ClassroomDetailScreen() {
                 ]}
                 onPress={() => {
                   router.push({
-                    pathname: '/worksheets/index',
+                    pathname: '/worksheets',
                   });
                 }}>
                 <Text style={styles.attendanceBtnText}>📑 Phiếu bài</Text>
@@ -405,7 +405,7 @@ export default function ClassroomDetailScreen() {
                 ]}
                 onPress={() => {
                   router.push({
-                    pathname: '/assessments/index',
+                    pathname: '/assessments',
                   });
                 }}>
                 <Text style={styles.attendanceBtnText}>📊 Đánh giá</Text>

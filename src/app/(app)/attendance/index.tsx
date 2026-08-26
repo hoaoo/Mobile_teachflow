@@ -12,6 +12,8 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { AppHeader } from '@/components/AppHeader';
 import {
   apiClient,
   type AttendanceHistoryItem,
@@ -336,6 +338,9 @@ export default function AttendanceScreen() {
 
   return (
     <View style={styles.container}>
+      <StatusBar style="dark" />
+      <AppHeader title="Chuyên cần" subtitle="Điểm danh & thống kê chuyên cần" />
+
       {/* Header Selector Box */}
       <View style={styles.topSelectorCard}>
         {/* Class Picker */}

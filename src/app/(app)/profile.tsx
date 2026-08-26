@@ -10,10 +10,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '@/auth';
 import { apiClient } from '@/api/client';
+import { AppHeader } from '@/components/AppHeader';
 import { Colors, Radius, Spacing, Typography } from '@/theme';
 
 export default function ProfileScreen() {
@@ -85,8 +85,9 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar style="dark" />
+      <AppHeader title="Hồ sơ cá nhân" showBack={true} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header Profile Card */}
         <View style={styles.headerCard}>
@@ -250,7 +251,7 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

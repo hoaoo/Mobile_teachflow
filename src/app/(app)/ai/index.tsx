@@ -88,9 +88,9 @@ export default function AiHomeScreen() {
     Keyboard.dismiss();
     const query = queryText.trim();
     if (query) {
-      router.push('/(app)/ai/chat');
+      router.push('/ai/chat');
     } else {
-      router.push('/(app)/ai/chat');
+      router.push('/ai/chat');
     }
   };
 
@@ -135,7 +135,7 @@ export default function AiHomeScreen() {
               desc="Kế hoạch bài dạy chuẩn GDPT"
               tag="Kế hoạch"
               tagColor={Colors.primary}
-              onPress={() => router.push('/(app)/lesson-plans/create')}
+              onPress={() => router.push('/lesson-plans/create')}
             />
           </View>
           <View style={styles.gridCol}>
@@ -145,7 +145,7 @@ export default function AiHomeScreen() {
               desc="Khởi động, khám phá, luyện tập"
               tag="Phương pháp"
               tagColor={Colors.brandTeal}
-              onPress={() => router.push('/(app)/ai/activity')}
+              onPress={() => router.push('/ai/activity')}
             />
           </View>
         </View>
@@ -158,7 +158,7 @@ export default function AiHomeScreen() {
               desc="Phiếu học tập và đề ôn tập"
               tag="Luyện tập"
               tagColor="#7C3AED"
-              onPress={() => router.push('/(app)/worksheets/create')}
+              onPress={() => router.push('/worksheets/create')}
             />
           </View>
           <View style={styles.gridCol}>
@@ -168,7 +168,7 @@ export default function AiHomeScreen() {
               desc="Ngân hàng câu hỏi thang Bloom"
               tag="Đánh giá"
               tagColor="#E11D48"
-              onPress={() => router.push('/(app)/ai/questions')}
+              onPress={() => router.push('/ai/questions')}
             />
           </View>
         </View>
@@ -180,14 +180,14 @@ export default function AiHomeScreen() {
             icon="🌟"
             title="Gợi ý nhận xét học sinh"
             desc="Nhận xét sự tiến bộ, ưu điểm & rèn luyện chuẩn mực"
-            onPress={() => router.push('/(app)/ai/student-comment')}
+            onPress={() => router.push('/ai/student-comment')}
           />
 
           <HomeroomActionCard
             icon="📊"
             title="Nhận xét tuần / Báo cáo tháng"
             desc="Tự động tổng hợp số liệu chuyên cần, nề nếp & học tập"
-            onPress={() => router.push('/(app)/ai/homeroom-summary')}
+            onPress={() => router.push('/ai/homeroom-summary')}
           />
         </View>
 
@@ -197,7 +197,7 @@ export default function AiHomeScreen() {
           icon="💬"
           title="Hỏi TeachFlow"
           desc="Trao đổi, giải đáp thắc mắc phương pháp và tình huống sư phạm"
-          onPress={() => router.push('/(app)/ai/chat')}
+          onPress={() => router.push('/ai/chat')}
         />
 
         {/* Disclaimer Footer */}

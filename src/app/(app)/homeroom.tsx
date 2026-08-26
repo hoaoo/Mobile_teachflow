@@ -11,8 +11,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { AppHeader } from '@/components/AppHeader';
 import {
   apiClient,
   type AttentionStudentItem,
@@ -598,10 +599,9 @@ export default function HomeroomScreen() {
 
   if (!hasHomeroom || homeroomClasses.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Chủ nhiệm</Text>
-        </View>
+      <View style={styles.container}>
+        <StatusBar style="dark" />
+        <AppHeader title="Chủ nhiệm" />
         <View style={styles.centerContainer}>
           <Text style={styles.emptyIcon}>🌟</Text>
           <Text style={styles.emptyTitle}>Bạn chưa có lớp chủ nhiệm</Text>
@@ -610,24 +610,22 @@ export default function HomeroomScreen() {
             lớp chủ nhiệm trong năm học này.
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   const selectedClass = homeroomClasses.find((c) => c.id === selectedClassId) || homeroomClasses[0];
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header & Class Switcher */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Công tác Chủ nhiệm</Text>
-          <Text style={styles.headerSubtitle}>
-            {selectedClass.name} • {selectedClass.gradeName} • {selectedClass.schoolYearName}
-          </Text>
-        </View>
+    <View style={styles.container}>
+      <StatusBar style="dark" />
+      <AppHeader
+        title="Chủ nhiệm"
+        subtitle={`${selectedClass.name} • ${selectedClass.gradeName} • ${selectedClass.schoolYearName}`}
+      />
 
-        {homeroomClasses.length > 1 ? (
+      {homeroomClasses.length > 1 && (
+        <View style={styles.pickerWrapper}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.classPickerScroll}>
             {homeroomClasses.map((cls) => (
               <Pressable
@@ -647,8 +645,8 @@ export default function HomeroomScreen() {
               </Pressable>
             ))}
           </ScrollView>
-        ) : null}
-      </View>
+        </View>
+      )}
 
       {/* Main Sub-Navigation Tabs */}
       <View style={styles.navTabsWrapper}>
@@ -1505,7 +1503,7 @@ export default function HomeroomScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -1533,8 +1531,15 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
   },
+  pickerWrapper: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
   classPickerScroll: {
-    marginTop: 8,
+    marginTop: 0,
   },
   classChip: {
     paddingHorizontal: 12,

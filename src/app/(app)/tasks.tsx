@@ -11,8 +11,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { apiClient, type TeacherTaskItem } from '@/api/client';
+import { AppHeader } from '@/components/AppHeader';
 
 function formatDisplayDate(date = new Date()): string {
   const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
@@ -297,13 +298,16 @@ export default function TasksScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
+    <View style={styles.container}>
+      <StatusBar style="dark" />
+      <AppHeader title="Nhiệm vụ" subtitle={formatDisplayDate()} />
+
+      {/* Action Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleRow}>
           <View>
-            <Text style={styles.headerTitle}>Nhiệm vụ & Công việc</Text>
-            <Text style={styles.headerDate}>{formatDisplayDate()}</Text>
+            <Text style={styles.headerTitle}>Danh sách công việc</Text>
+            <Text style={styles.headerDate}>Nhiệm vụ giảng dạy & hành chính</Text>
           </View>
 
           <Pressable style={styles.addTaskBtn} onPress={openCreateModal}>
@@ -506,7 +510,7 @@ export default function TasksScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
